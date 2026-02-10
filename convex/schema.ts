@@ -9,6 +9,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
     searchText: v.string(),
     favicon: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
   })
     .index("by_url", ["url"])
     .searchIndex("search_bookmarks", { searchField: "searchText" }),

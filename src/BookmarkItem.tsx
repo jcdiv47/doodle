@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
@@ -12,10 +12,47 @@ export function BookmarkItem({
   index: number;
 }) {
   const [showNotes, setShowNotes] = useState(false);
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [tagValue, setTagValue] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRemoveTag, setConfirmRemoveTag] = useState<string | null>(null);
   const remove = useMutation(api.bookmarks.remove);
+  const addTag = useMutation(api.bookmarks.addTag);
+  const removeTag = useMutation(api.bookmarks.removeTag);
 
   const handleDelete = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
     await remove({ bookmarkId: bookmark._id });
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    if (confirmRemoveTag !== tag) {
+      setConfirmRemoveTag(tag);
+      return;
+    }
+    await removeTag({ bookmarkId: bookmark._id, tag });
+    setConfirmRemoveTag(null);
+  };
+
+  const handleAddTag = async () => {
+    const tag = tagValue.trim().toLowerCase();
+    if (!tag) return;
+    await addTag({ bookmarkId: bookmark._id, tag });
+    setTagValue("");
+    setShowTagInput(false);
+  };
+
+  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
+    } else if (e.key === "Escape") {
+      setTagValue("");
+      setShowTagInput(false);
+    }
   };
 
   const domain = (() => {
@@ -25,6 +62,8 @@ export function BookmarkItem({
       return bookmark.url;
     }
   })();
+
+  const tags = bookmark.tags ?? [];
 
   return (
     <div
@@ -77,6 +116,49 @@ export function BookmarkItem({
             </p>
           )}
 
+          {tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className={`group inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                    confirmRemoveTag === tag
+                      ? "border-red-400/40 bg-red-400/10 text-red-400"
+                      : "border-amber/20 bg-amber/5 text-amber/70"
+                  }`}
+                >
+                  {confirmRemoveTag === tag ? "remove?" : tag}
+                  {confirmRemoveTag === tag ? (
+                    <>
+                      <button
+                        onClick={() => setConfirmRemoveTag(null)}
+                        className="text-zinc-text transition-colors hover:text-white"
+                        aria-label="Cancel"
+                      >
+                        &times;
+                      </button>
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="text-red-400 transition-colors hover:text-red-300"
+                        aria-label="Confirm remove"
+                      >
+                        &larr;
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-amber/30 transition-colors hover:text-red-400"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+
           {bookmark.notes && !showNotes && (
             <p className="mt-1 border-l-2 border-amber/30 pl-2 font-mono text-xs text-zinc-text italic">
               {bookmark.notes}
@@ -91,6 +173,25 @@ export function BookmarkItem({
             />
           )}
 
+          {showTagInput && (
+            <div className="mt-1.5">
+              <input
+                type="text"
+                value={tagValue}
+                onChange={(e) => setTagValue(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => {
+                  if (!tagValue.trim()) {
+                    setShowTagInput(false);
+                  }
+                }}
+                placeholder="tag name..."
+                className="w-32 border border-zinc-border bg-charcoal px-2 py-1 font-mono text-xs text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+                autoFocus
+              />
+            </div>
+          )}
+
           <div className="mt-2 flex gap-3">
             <button
               onClick={() => setShowNotes(!showNotes)}
@@ -99,11 +200,34 @@ export function BookmarkItem({
               {showNotes ? "close" : bookmark.notes ? "edit note" : "add note"}
             </button>
             <button
-              onClick={handleDelete}
-              className="font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
+              onClick={() => setShowTagInput(!showTagInput)}
+              className="font-mono text-xs text-zinc-text transition-colors hover:text-amber"
             >
-              delete
+              {showTagInput ? "close" : "add tag"}
             </button>
+            {confirmDelete ? (
+              <span className="inline-flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  className="font-mono text-xs text-red-400 transition-colors hover:text-red-300"
+                >
+                  confirm?
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
+                >
+                  cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={handleDelete}
+                className="font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
+              >
+                delete
+              </button>
+            )}
           </div>
         </div>
       </div>

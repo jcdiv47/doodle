@@ -2,20 +2,21 @@ import { query, mutation, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
+const bookmarkFields = v.object({
+  _id: v.id("bookmarks"),
+  _creationTime: v.number(),
+  url: v.string(),
+  title: v.string(),
+  description: v.string(),
+  notes: v.optional(v.string()),
+  searchText: v.string(),
+  favicon: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())),
+});
+
 export const list = query({
   args: {},
-  returns: v.array(
-    v.object({
-      _id: v.id("bookmarks"),
-      _creationTime: v.number(),
-      url: v.string(),
-      title: v.string(),
-      description: v.string(),
-      notes: v.optional(v.string()),
-      searchText: v.string(),
-      favicon: v.optional(v.string()),
-    })
-  ),
+  returns: v.array(bookmarkFields),
   handler: async (ctx) => {
     return await ctx.db
       .query("bookmarks")
@@ -26,18 +27,7 @@ export const list = query({
 
 export const search = query({
   args: { query: v.string() },
-  returns: v.array(
-    v.object({
-      _id: v.id("bookmarks"),
-      _creationTime: v.number(),
-      url: v.string(),
-      title: v.string(),
-      description: v.string(),
-      notes: v.optional(v.string()),
-      searchText: v.string(),
-      favicon: v.optional(v.string()),
-    })
-  ),
+  returns: v.array(bookmarkFields),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("bookmarks")
@@ -45,6 +35,23 @@ export const search = query({
         q.search("searchText", args.query)
       )
       .collect();
+  },
+});
+
+export const listTags = query({
+  args: {},
+  returns: v.array(v.string()),
+  handler: async (ctx) => {
+    const bookmarks = await ctx.db.query("bookmarks").collect();
+    const tagSet = new Set<string>();
+    for (const bookmark of bookmarks) {
+      if (bookmark.tags) {
+        for (const tag of bookmark.tags) {
+          tagSet.add(tag);
+        }
+      }
+    }
+    return Array.from(tagSet).sort();
   },
 });
 
@@ -75,6 +82,50 @@ export const add = mutation({
   },
 });
 
+export const addTag = mutation({
+  args: {
+    bookmarkId: v.id("bookmarks"),
+    tag: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const bookmark = await ctx.db.get(args.bookmarkId);
+    if (!bookmark) return null;
+    const tag = args.tag.trim().toLowerCase();
+    if (!tag) return null;
+    const tags = bookmark.tags ?? [];
+    if (tags.includes(tag)) return null;
+    const newTags = [...tags, tag];
+    const searchText = [bookmark.url, bookmark.title, bookmark.description, bookmark.notes || "", ...newTags]
+      .filter(Boolean)
+      .join(" ");
+    await ctx.db.patch(args.bookmarkId, { tags: newTags, searchText });
+    return null;
+  },
+});
+
+export const removeTag = mutation({
+  args: {
+    bookmarkId: v.id("bookmarks"),
+    tag: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const bookmark = await ctx.db.get(args.bookmarkId);
+    if (!bookmark) return null;
+    const tags = bookmark.tags ?? [];
+    const newTags = tags.filter((t) => t !== args.tag);
+    const searchText = [bookmark.url, bookmark.title, bookmark.description, bookmark.notes || "", ...newTags]
+      .filter(Boolean)
+      .join(" ");
+    await ctx.db.patch(args.bookmarkId, {
+      tags: newTags.length > 0 ? newTags : undefined,
+      searchText,
+    });
+    return null;
+  },
+});
+
 export const updateNotes = mutation({
   args: {
     bookmarkId: v.id("bookmarks"),
@@ -85,7 +136,8 @@ export const updateNotes = mutation({
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark) return null;
     const notes = args.notes.trim() || undefined;
-    const searchText = [bookmark.url, bookmark.title, bookmark.description, notes || ""]
+    const tags = bookmark.tags ?? [];
+    const searchText = [bookmark.url, bookmark.title, bookmark.description, notes || "", ...tags]
       .filter(Boolean)
       .join(" ");
     await ctx.db.patch(args.bookmarkId, { notes, searchText });
@@ -113,7 +165,8 @@ export const updateMetadata = internalMutation({
   handler: async (ctx, args) => {
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark) return null;
-    const searchText = [bookmark.url, args.title, args.description, bookmark.notes || ""]
+    const tags = bookmark.tags ?? [];
+    const searchText = [bookmark.url, args.title, args.description, bookmark.notes || "", ...tags]
       .filter(Boolean)
       .join(" ");
     await ctx.db.patch(args.bookmarkId, {

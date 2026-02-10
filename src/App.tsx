@@ -1,9 +1,23 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AddBookmark } from "./AddBookmark";
 import { BookmarkList } from "./BookmarkList";
+import { TagFilter } from "./TagFilter";
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  const handleToggleTag = useCallback((tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-charcoal font-sans">
@@ -29,7 +43,9 @@ export default function App() {
           />
         </div>
 
-        <BookmarkList searchQuery={searchQuery} />
+        <TagFilter selectedTags={selectedTags} onToggleTag={handleToggleTag} />
+
+        <BookmarkList searchQuery={searchQuery} selectedTags={selectedTags} />
       </div>
     </div>
   );
