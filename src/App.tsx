@@ -34,12 +34,22 @@ export default function App() {
         <AddBookmark />
 
         <div className="relative mt-8">
+          <svg
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-text"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+          >
+            <circle cx="6.5" cy="6.5" r="4.5" />
+            <line x1="10" y1="10" x2="14" y2="14" />
+          </svg>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="search bookmarks..."
-            className="w-full border border-zinc-border bg-charcoal-light px-4 py-3 pr-10 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+            className="w-full border border-zinc-border bg-charcoal-light py-3 pl-11 pr-10 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
           />
           {searchQuery && (
             <button
