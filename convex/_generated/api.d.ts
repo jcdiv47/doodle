@@ -10,6 +10,7 @@
 
 import type * as bookmarks from "../bookmarks.js";
 import type * as fetch from "../fetch.js";
+import type * as http from "../http.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   bookmarks: typeof bookmarks;
   fetch: typeof fetch;
+  http: typeof http;
 }>;
 
 /**

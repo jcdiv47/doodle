@@ -82,6 +82,37 @@ export const add = mutation({
   },
 });
 
+export const addFromApi = internalMutation({
+  args: { url: v.string(), tags: v.optional(v.array(v.string())) },
+  returns: v.id("bookmarks"),
+  handler: async (ctx, args) => {
+    const url = args.url.trim();
+    const existing = await ctx.db
+      .query("bookmarks")
+      .withIndex("by_url", (q) => q.eq("url", url))
+      .first();
+    if (existing) {
+      throw new ConvexError("This URL has already been bookmarked");
+    }
+    const tags = args.tags
+      ? [...new Set(args.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))]
+      : undefined;
+    const searchText = [url, ...(tags ?? [])].join(" ");
+    const id = await ctx.db.insert("bookmarks", {
+      url,
+      title: url,
+      description: "",
+      searchText,
+      tags: tags && tags.length > 0 ? tags : undefined,
+    });
+    await ctx.scheduler.runAfter(0, internal.fetch.fetchMetadata, {
+      bookmarkId: id,
+      url,
+    });
+    return id;
+  },
+});
+
 export const addTag = mutation({
   args: {
     bookmarkId: v.id("bookmarks"),
