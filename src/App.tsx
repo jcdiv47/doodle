@@ -6,6 +6,8 @@ import { TagFilter } from "./TagFilter";
 export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"createdAt" | "readCount">("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const handleToggleTag = useCallback((tag: string) => {
     setSelectedTags((prev) => {
@@ -68,7 +70,14 @@ export default function App() {
 
         <TagFilter selectedTags={selectedTags} onToggleTag={handleToggleTag} />
 
-        <BookmarkList searchQuery={searchQuery} selectedTags={selectedTags} />
+        <BookmarkList
+          searchQuery={searchQuery}
+          selectedTags={selectedTags}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortByChange={setSortBy}
+          onSortOrderChange={setSortOrder}
+        />
       </div>
     </div>
   );
