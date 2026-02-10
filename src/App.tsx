@@ -49,7 +49,7 @@ export default function App() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="search bookmarks..."
-            className="w-full border border-zinc-border bg-charcoal-light py-3 pl-11 pr-10 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+            className="w-full border border-zinc-border bg-charcoal-light py-3 pl-11 pr-10 font-mono text-base text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
           />
           {searchQuery && (
             <button

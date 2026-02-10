@@ -20,7 +20,7 @@ export function TagFilter({
           <button
             key={tag}
             onClick={() => onToggleTag(tag)}
-            className={`border px-2.5 py-1 font-mono text-xs transition-all ${
+            className={`border px-2.5 py-1 font-mono text-sm transition-all ${
               isSelected
                 ? "border-amber/60 bg-amber/10 text-amber"
                 : "border-zinc-border bg-charcoal-lighter text-zinc-text hover:border-zinc-text/40 hover:text-white/70"
@@ -37,7 +37,7 @@ export function TagFilter({
               onToggleTag(tag);
             }
           }}
-          className="border border-transparent px-2 py-1 font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
+          className="border border-transparent px-2 py-1 font-mono text-sm text-zinc-text transition-colors hover:text-red-400"
         >
           clear
         </button>

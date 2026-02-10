@@ -49,7 +49,7 @@ export function BookmarkList({
     <div className="mt-6 divide-y divide-zinc-border border border-zinc-border">
       {bookmarks.map((bookmark, index) => (
         <BookmarkItem
-          key={bookmark._id}
+          key={bookmark.url}
           bookmark={bookmark}
           index={index}
         />

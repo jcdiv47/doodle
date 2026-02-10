@@ -56,8 +56,14 @@ export const listTags = query({
 });
 
 export const add = mutation({
-  args: { url: v.string() },
-  returns: v.id("bookmarks"),
+  args: {
+    url: v.string(),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    favicon: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.union(v.id("bookmarks"), v.null()),
   handler: async (ctx, args) => {
     const url = args.url.trim();
     const existing = await ctx.db
@@ -65,19 +71,28 @@ export const add = mutation({
       .withIndex("by_url", (q) => q.eq("url", url))
       .first();
     if (existing) {
-      throw new ConvexError("This URL has already been bookmarked");
+      return null;
     }
-    const searchText = url;
+    const title = args.title || url;
+    const description = args.description || "";
+    const notes = args.notes?.trim() || undefined;
+    const searchText = [url, title, description, notes || ""]
+      .filter(Boolean)
+      .join(" ");
     const id = await ctx.db.insert("bookmarks", {
       url,
-      title: url,
-      description: "",
+      title,
+      description,
       searchText,
+      favicon: args.favicon,
+      notes,
     });
-    await ctx.scheduler.runAfter(0, internal.fetch.fetchMetadata, {
-      bookmarkId: id,
-      url,
-    });
+    if (args.title === undefined) {
+      await ctx.scheduler.runAfter(0, internal.fetch.fetchMetadata, {
+        bookmarkId: id,
+        url,
+      });
+    }
     return id;
   },
 });

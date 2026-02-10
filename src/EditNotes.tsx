@@ -34,20 +34,20 @@ export function EditNotes({
         }}
         placeholder="add a note..."
         rows={2}
-        className="w-full resize-none border border-zinc-border bg-charcoal px-3 py-2 font-mono text-xs text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+        className="w-full resize-none border border-zinc-border bg-charcoal px-3 py-2 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
         autoFocus
       />
       <div className="mt-1 flex gap-2">
         <button
           type="submit"
-          className="font-mono text-xs text-amber transition-colors hover:text-amber-hover"
+          className="font-mono text-sm text-amber transition-colors hover:text-amber-hover"
         >
           save
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
+          className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
         >
           cancel
         </button>

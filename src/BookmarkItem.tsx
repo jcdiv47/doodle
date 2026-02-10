@@ -103,11 +103,11 @@ export function BookmarkItem({
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="truncate font-mono text-sm font-medium text-white hover:text-amber"
+              className="truncate font-mono text-base font-medium text-white hover:text-amber"
             >
               {bookmark.title}
             </a>
-            <span className="shrink-0 font-mono text-xs text-zinc-text">
+            <span className="shrink-0 font-mono text-sm text-zinc-text">
               {domain}
             </span>
           </div>
@@ -123,7 +123,7 @@ export function BookmarkItem({
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className={`group inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                  className={`group inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-xs transition-colors ${
                     confirmRemoveTag === tag
                       ? "border-red-400/40 bg-red-400/10 text-red-400"
                       : "border-amber/20 bg-amber/5 text-amber/70"
@@ -163,12 +163,12 @@ export function BookmarkItem({
 
           {bookmark.notes && !showNotes && (
             <div className="mt-1 flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate border-l-2 border-amber/30 pl-2 font-mono text-xs text-zinc-text italic">
+              <p className="min-w-0 flex-1 truncate border-l-2 border-amber/30 pl-2 font-mono text-sm text-zinc-text italic">
                 {bookmark.notes}
               </p>
               <button
                 onClick={() => setShowNoteModal(true)}
-                className="shrink-0 font-mono text-xs text-zinc-text transition-colors hover:text-amber"
+                className="shrink-0 font-mono text-sm text-zinc-text transition-colors hover:text-amber"
               >
                 view
               </button>
@@ -196,7 +196,7 @@ export function BookmarkItem({
                   }
                 }}
                 placeholder="tag name..."
-                className="w-32 border border-zinc-border bg-charcoal px-2 py-1 font-mono text-xs text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+                className="w-32 border border-zinc-border bg-charcoal px-2 py-1 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
                 autoFocus
               />
             </div>
@@ -205,13 +205,13 @@ export function BookmarkItem({
           <div className="mt-2 flex gap-3">
             <button
               onClick={() => setShowNotes(!showNotes)}
-              className="font-mono text-xs text-zinc-text transition-colors hover:text-amber"
+              className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
             >
               {showNotes ? "close" : bookmark.notes ? "edit note" : "add note"}
             </button>
             <button
               onClick={() => setShowTagInput(!showTagInput)}
-              className="font-mono text-xs text-zinc-text transition-colors hover:text-amber"
+              className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
             >
               {showTagInput ? "close" : "add tag"}
             </button>
@@ -219,13 +219,13 @@ export function BookmarkItem({
               <span className="inline-flex gap-2">
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
+                  className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
                 >
                   cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="font-mono text-xs text-red-400 transition-colors hover:text-red-300"
+                  className="font-mono text-sm text-red-400 transition-colors hover:text-red-300"
                 >
                   confirm
                 </button>
@@ -233,7 +233,7 @@ export function BookmarkItem({
             ) : (
               <button
                 onClick={handleDelete}
-                className="font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
+                className="font-mono text-sm text-zinc-text transition-colors hover:text-red-400"
               >
                 delete
               </button>
@@ -251,16 +251,16 @@ export function BookmarkItem({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex shrink-0 items-center justify-between">
-              <span className="font-mono text-xs text-amber">note</span>
+              <span className="font-mono text-sm text-amber">note</span>
               <button
                 onClick={() => setShowNoteModal(false)}
-                className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
+                className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
               >
                 close
               </button>
             </div>
             <div className="min-h-0 overflow-y-auto">
-              <p className="whitespace-pre-wrap break-words font-mono text-xs text-zinc-text">
+              <p className="whitespace-pre-wrap break-words font-mono text-sm text-zinc-text">
                 {bookmark.notes}
               </p>
             </div>
