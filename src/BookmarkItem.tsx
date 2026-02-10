@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
@@ -12,6 +13,7 @@ export function BookmarkItem({
   index: number;
 }) {
   const [showNotes, setShowNotes] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagValue, setTagValue] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -160,9 +162,17 @@ export function BookmarkItem({
           )}
 
           {bookmark.notes && !showNotes && (
-            <p className="mt-1 border-l-2 border-amber/30 pl-2 font-mono text-xs text-zinc-text italic">
-              {bookmark.notes}
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate border-l-2 border-amber/30 pl-2 font-mono text-xs text-zinc-text italic">
+                {bookmark.notes}
+              </p>
+              <button
+                onClick={() => setShowNoteModal(true)}
+                className="shrink-0 font-mono text-xs text-zinc-text transition-colors hover:text-amber"
+              >
+                view
+              </button>
+            </div>
           )}
 
           {showNotes && (
@@ -208,16 +218,16 @@ export function BookmarkItem({
             {confirmDelete ? (
               <span className="inline-flex gap-2">
                 <button
-                  onClick={handleDelete}
-                  className="font-mono text-xs text-red-400 transition-colors hover:text-red-300"
-                >
-                  confirm?
-                </button>
-                <button
                   onClick={() => setConfirmDelete(false)}
                   className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
                 >
                   cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="font-mono text-xs text-red-400 transition-colors hover:text-red-300"
+                >
+                  confirm
                 </button>
               </span>
             ) : (
@@ -231,6 +241,33 @@ export function BookmarkItem({
           </div>
         </div>
       </div>
+      {showNoteModal && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setShowNoteModal(false)}
+        >
+          <div
+            className="mx-4 flex max-h-[80vh] w-full max-w-lg flex-col border border-zinc-border bg-charcoal p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex shrink-0 items-center justify-between">
+              <span className="font-mono text-xs text-amber">note</span>
+              <button
+                onClick={() => setShowNoteModal(false)}
+                className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
+              >
+                close
+              </button>
+            </div>
+            <div className="min-h-0 overflow-y-auto">
+              <p className="whitespace-pre-wrap break-words font-mono text-xs text-zinc-text">
+                {bookmark.notes}
+              </p>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
