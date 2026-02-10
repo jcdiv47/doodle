@@ -22,16 +22,20 @@ export default function App() {
   return (
     <div className="min-h-screen bg-charcoal font-sans">
       <div className="mx-auto max-w-3xl px-4 py-12">
-        <header className="mb-10">
-          <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
-            bookmarks
-          </h1>
-          <p className="mt-1 font-mono text-xs text-zinc-text">
-            save. search. retrieve.
-          </p>
+        <header className="mb-10 flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <div>
+              <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+                bookmarks
+              </h1>
+              <p className="mt-1 font-mono text-xs text-zinc-text">
+                save. search. retrieve.
+              </p>
+            </div>
+          </div>
+          <AddBookmark />
         </header>
-
-        <AddBookmark />
 
         <div className="relative mt-8">
           <svg
