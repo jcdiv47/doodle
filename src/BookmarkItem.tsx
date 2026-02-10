@@ -1,5 +1,4 @@
 import { useState, type KeyboardEvent } from "react";
-import { createPortal } from "react-dom";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
@@ -12,7 +11,6 @@ export function BookmarkItem({
   bookmark: Doc<"bookmarks">;
   index: number;
 }) {
-  const [showNotes, setShowNotes] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagValue, setTagValue] = useState("");
@@ -161,26 +159,15 @@ export function BookmarkItem({
             </div>
           )}
 
-          {bookmark.notes && !showNotes && (
-            <div className="mt-1 flex items-center gap-2">
+          {bookmark.notes && (
+            <button
+              onClick={() => setShowNoteModal(true)}
+              className="mt-1 flex w-full items-center gap-2 text-left"
+            >
               <p className="min-w-0 flex-1 truncate border-l-2 border-amber/30 pl-2 font-mono text-sm text-zinc-text italic">
                 {bookmark.notes}
               </p>
-              <button
-                onClick={() => setShowNoteModal(true)}
-                className="shrink-0 font-mono text-sm text-zinc-text transition-colors hover:text-amber"
-              >
-                view
-              </button>
-            </div>
-          )}
-
-          {showNotes && (
-            <EditNotes
-              bookmarkId={bookmark._id}
-              initialNotes={bookmark.notes || ""}
-              onClose={() => setShowNotes(false)}
-            />
+            </button>
           )}
 
           {showTagInput && (
@@ -204,10 +191,10 @@ export function BookmarkItem({
 
           <div className="mt-2 flex gap-3">
             <button
-              onClick={() => setShowNotes(!showNotes)}
+              onClick={() => setShowNoteModal(true)}
               className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
             >
-              {showNotes ? "close" : bookmark.notes ? "edit note" : "add note"}
+              {bookmark.notes ? "edit note" : "add note"}
             </button>
             <button
               onClick={() => setShowTagInput(!showTagInput)}
@@ -241,32 +228,12 @@ export function BookmarkItem({
           </div>
         </div>
       </div>
-      {showNoteModal && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowNoteModal(false)}
-        >
-          <div
-            className="mx-4 flex max-h-[80vh] w-full max-w-lg flex-col border border-zinc-border bg-charcoal p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex shrink-0 items-center justify-between">
-              <span className="font-mono text-sm text-amber">note</span>
-              <button
-                onClick={() => setShowNoteModal(false)}
-                className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
-              >
-                close
-              </button>
-            </div>
-            <div className="min-h-0 overflow-y-auto">
-              <p className="whitespace-pre-wrap break-words font-mono text-sm text-zinc-text">
-                {bookmark.notes}
-              </p>
-            </div>
-          </div>
-        </div>,
-        document.body,
+      {showNoteModal && (
+        <EditNotes
+          bookmarkId={bookmark._id}
+          initialNotes={bookmark.notes || ""}
+          onClose={() => setShowNoteModal(false)}
+        />
       )}
     </div>
   );
