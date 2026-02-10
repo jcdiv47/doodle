@@ -12,6 +12,7 @@ const bookmarkFields = v.object({
   searchText: v.string(),
   favicon: v.optional(v.string()),
   tags: v.optional(v.array(v.string())),
+  readCount: v.optional(v.number()),
 });
 
 export const list = query({
@@ -187,6 +188,19 @@ export const updateNotes = mutation({
       .filter(Boolean)
       .join(" ");
     await ctx.db.patch(args.bookmarkId, { notes, searchText });
+    return null;
+  },
+});
+
+export const trackRead = mutation({
+  args: { bookmarkId: v.id("bookmarks") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const bookmark = await ctx.db.get(args.bookmarkId);
+    if (!bookmark) return null;
+    await ctx.db.patch(args.bookmarkId, {
+      readCount: (bookmark.readCount ?? 0) + 1,
+    });
     return null;
   },
 });

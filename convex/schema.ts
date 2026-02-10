@@ -10,6 +10,7 @@ export default defineSchema({
     searchText: v.string(),
     favicon: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
+    readCount: v.optional(v.number()),
   })
     .index("by_url", ["url"])
     .searchIndex("search_bookmarks", { searchField: "searchText" }),

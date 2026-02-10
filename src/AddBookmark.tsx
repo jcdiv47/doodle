@@ -40,6 +40,7 @@ export function AddBookmark() {
             favicon: args.favicon,
             notes: args.notes,
             tags: undefined,
+            readCount: undefined,
           },
           ...current,
         ]);

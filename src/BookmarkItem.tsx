@@ -19,6 +19,7 @@ export function BookmarkItem({
   const remove = useMutation(api.bookmarks.remove);
   const addTag = useMutation(api.bookmarks.addTag);
   const removeTag = useMutation(api.bookmarks.removeTag);
+  const trackRead = useMutation(api.bookmarks.trackRead);
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -101,12 +102,16 @@ export function BookmarkItem({
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackRead({ bookmarkId: bookmark._id })}
               className="truncate font-mono text-base font-medium text-white hover:text-amber"
             >
               {bookmark.title}
             </a>
             <span className="shrink-0 font-mono text-sm text-zinc-text">
               {domain}
+              {(bookmark.readCount ?? 0) > 0 && (
+                <> · {bookmark.readCount} {bookmark.readCount === 1 ? "read" : "reads"}</>
+              )}
             </span>
           </div>
 
