@@ -243,7 +243,7 @@ export function BookmarkItem({
       </div>
       {showNoteModal && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => setShowNoteModal(false)}
         >
           <div
