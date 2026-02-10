@@ -33,14 +33,23 @@ export default function App() {
 
         <AddBookmark />
 
-        <div className="mt-8">
+        <div className="relative mt-8">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="search bookmarks..."
-            className="w-full border border-zinc-border bg-charcoal-light px-4 py-3 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
+            className="w-full border border-zinc-border bg-charcoal-light px-4 py-3 pr-10 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-text transition-colors hover:text-white"
+              aria-label="Clear search"
+            >
+              clear
+            </button>
+          )}
         </div>
 
         <TagFilter selectedTags={selectedTags} onToggleTag={handleToggleTag} />
