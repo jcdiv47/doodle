@@ -41,6 +41,7 @@ export function AddBookmark() {
             notes: args.notes,
             tags: undefined,
             readCount: undefined,
+            userId: "optimistic" as unknown as Id<"users">,
           },
           ...current,
         ]);
