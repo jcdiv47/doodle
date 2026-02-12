@@ -1,7 +1,7 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUserId, requireCurrentUserId } from "./lib/auth";
 
 const bookmarkFields = v.object({
   _id: v.id("bookmarks"),
@@ -21,7 +21,7 @@ export const list = query({
   args: {},
   returns: v.array(bookmarkFields),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getCurrentUserId(ctx);
     if (!userId) return [];
     return await ctx.db
       .query("bookmarks")
@@ -35,7 +35,7 @@ export const search = query({
   args: { query: v.string() },
   returns: v.array(bookmarkFields),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getCurrentUserId(ctx);
     if (!userId) return [];
     return await ctx.db
       .query("bookmarks")
@@ -50,7 +50,7 @@ export const listTags = query({
   args: {},
   returns: v.array(v.string()),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getCurrentUserId(ctx);
     if (!userId) return [];
     const bookmarks = await ctx.db
       .query("bookmarks")
@@ -78,8 +78,7 @@ export const add = mutation({
   },
   returns: v.union(v.id("bookmarks"), v.null()),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const url = args.url.trim();
     const existing = await ctx.db
       .query("bookmarks")
@@ -155,8 +154,7 @@ export const addTag = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark || bookmark.userId !== userId) return null;
     const tag = args.tag.trim().toLowerCase();
@@ -179,8 +177,7 @@ export const removeTag = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark || bookmark.userId !== userId) return null;
     const tags = bookmark.tags ?? [];
@@ -203,8 +200,7 @@ export const updateNotes = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark || bookmark.userId !== userId) return null;
     const notes = args.notes.trim() || undefined;
@@ -221,8 +217,7 @@ export const trackRead = mutation({
   args: { bookmarkId: v.id("bookmarks") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark || bookmark.userId !== userId) return null;
     await ctx.db.patch(args.bookmarkId, {
@@ -236,8 +231,7 @@ export const remove = mutation({
   args: { bookmarkId: v.id("bookmarks") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
     const bookmark = await ctx.db.get(args.bookmarkId);
     if (!bookmark || bookmark.userId !== userId) return null;
     await ctx.db.delete(args.bookmarkId);

@@ -3,19 +3,17 @@ import {
   Authenticated,
   Unauthenticated,
   AuthLoading,
-  useConvexAuth,
   useQuery,
 } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../convex/_generated/api";
 import { AddBookmark } from "./AddBookmark";
 import { BookmarkList } from "./BookmarkList";
 import { TagFilter } from "./TagFilter";
 import { SignIn } from "./SignIn";
 import { ApiKeySettings } from "./ApiKeySettings";
+import { authClient } from "./lib/auth-client";
 
 function UserBadge() {
-  const { signOut } = useAuthActions();
   const user = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
@@ -79,7 +77,7 @@ function UserBadge() {
             api keys
           </button>
           <button
-            onClick={() => void signOut()}
+            onClick={() => void authClient.signOut()}
             className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
           >
             sign out
@@ -192,67 +190,14 @@ function AuthenticatedContent() {
   return <BookmarkApp />;
 }
 
-function UnauthenticatedContent({
-  isAuthenticated,
-  hasCodeParam,
-  hasOAuthParam,
-}: {
-  isAuthenticated: boolean;
-  hasCodeParam: boolean;
-  hasOAuthParam: boolean;
-}) {
-  const [oauthGraceExpired, setOAuthGraceExpired] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated || !hasOAuthParam) return;
-    const timeoutId = window.setTimeout(() => {
-      setOAuthGraceExpired(true);
-    }, 3500);
-    return () => window.clearTimeout(timeoutId);
-  }, [isAuthenticated, hasOAuthParam]);
-
-  const pendingOAuth =
-    !isAuthenticated && (hasCodeParam || (hasOAuthParam && !oauthGraceExpired));
-
-  return pendingOAuth ? <LoadingScreen /> : <SignIn />;
-}
-
 export default function App() {
-  const { isAuthenticated } = useConvexAuth();
-  const searchParams = new URLSearchParams(window.location.search);
-  const hasCodeParam = searchParams.has("code");
-  const hasOAuthParam = searchParams.has("oauth");
-
-  // Clean up OAuth query params once the session is established.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const url = new URL(window.location.href);
-    const hadOAuthParams =
-      url.searchParams.has("code") ||
-      url.searchParams.has("state") ||
-      url.searchParams.has("oauth") ||
-      url.searchParams.has("oauth_error");
-    if (!hadOAuthParams) return;
-
-    url.searchParams.delete("code");
-    url.searchParams.delete("state");
-    url.searchParams.delete("oauth");
-    url.searchParams.delete("oauth_error");
-    window.history.replaceState({}, "", url.toString());
-  }, [isAuthenticated]);
-
   return (
     <>
       <AuthLoading>
         <LoadingScreen />
       </AuthLoading>
       <Unauthenticated>
-        <UnauthenticatedContent
-          key={hasOAuthParam ? "oauth-pending" : "default"}
-          isAuthenticated={isAuthenticated}
-          hasCodeParam={hasCodeParam}
-          hasOAuthParam={hasOAuthParam}
-        />
+        <SignIn />
       </Unauthenticated>
       <Authenticated>
         <AuthenticatedContent />

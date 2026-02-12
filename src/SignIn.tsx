@@ -1,20 +1,23 @@
 import { useState } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { authClient, type OAuthProvider } from "./lib/auth-client";
 
 function getInitialOAuthError(): string | null {
   const params = new URLSearchParams(window.location.search);
-  const oauthError = params.get("oauth_error");
-  const hadOAuthSignal = params.has("oauth") || oauthError !== null;
-  if (hadOAuthSignal) {
-    params.delete("oauth");
-    params.delete("oauth_error");
+  const oauthError = params.get("error");
+  const oauthErrorDescription = params.get("error_description");
+  if (oauthError || oauthErrorDescription) {
+    params.delete("error");
+    params.delete("error_description");
     const qs = params.toString();
     window.history.replaceState(
       {},
       "",
       qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
     );
-    if (oauthError === "signup_disabled") {
+    const normalizedError = `${oauthError ?? ""} ${oauthErrorDescription ?? ""}`
+      .toLowerCase()
+      .trim();
+    if (normalizedError.includes("sign up")) {
       return "you are not allowed to sign up at the moment.";
     }
     return "sign-in failed. please try again.";
@@ -23,17 +26,25 @@ function getInitialOAuthError(): string | null {
 }
 
 export function SignIn() {
-  const { signIn } = useAuthActions();
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(getInitialOAuthError);
 
-  const handleOAuth = (provider: string) => {
+  const handleOAuth = (provider: OAuthProvider) => {
     setError(null);
     setLoading(provider);
-    void signIn(provider, { redirectTo: "/?oauth=1" }).catch((e) => {
-      setError(e instanceof Error ? e.message : "Sign-in failed");
-      setLoading(null);
-    });
+    const callbackURL = `${window.location.origin}/`;
+    void authClient.signIn
+      .social({ provider, callbackURL })
+      .then((response) => {
+        if (response.error) {
+          setError(response.error.message ?? "sign-in failed");
+          setLoading(null);
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "sign-in failed");
+        setLoading(null);
+      });
   };
 
   return (

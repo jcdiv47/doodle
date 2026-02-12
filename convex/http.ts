@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { ConvexError } from "convex/values";
-import { auth } from "./auth";
+import { authComponent, createAuth } from "./auth";
 import { sha256Hex } from "./lib/hash";
 
 const corsHeaders = {
@@ -19,7 +19,7 @@ function jsonResponse(body: object, status: number) {
 }
 
 const http = httpRouter();
-auth.addHttpRoutes(http);
+authComponent.registerRoutes(http, createAuth, { cors: true });
 
 http.route({
   path: "/api/bookmark",

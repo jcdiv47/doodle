@@ -29,7 +29,7 @@ export function AddBookmark() {
     (localStore, args) => {
       const current = localStore.getQuery(api.bookmarks.list, {});
       const user = localStore.getQuery(api.users.me, {});
-      if (current !== undefined && user) {
+      if (current !== undefined && user?._id) {
         localStore.setQuery(api.bookmarks.list, {}, [
           {
             _id: `optimistic_${Date.now()}` as unknown as Id<"bookmarks">,

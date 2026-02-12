@@ -1,7 +1,7 @@
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { sha256Hex } from "./lib/hash";
+import { getCurrentUserId, requireCurrentUserId } from "./lib/auth";
 
 const MAX_KEYS_PER_USER = 3;
 const KEY_PREFIX = "doodl_";
@@ -9,7 +9,7 @@ const KEY_PREFIX = "doodl_";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getCurrentUserId(ctx);
     if (!userId) return [];
     const keys = await ctx.db
       .query("apiKeys")
@@ -28,8 +28,7 @@ export const list = query({
 export const generate = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
 
     const name = args.name.trim();
     if (!name) throw new ConvexError("Name is required");
@@ -67,8 +66,7 @@ export const generate = mutation({
 export const revoke = mutation({
   args: { keyId: v.id("apiKeys") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new ConvexError("Not authenticated");
+    const userId = await requireCurrentUserId(ctx);
 
     const key = await ctx.db.get(args.keyId);
     if (!key || key.userId !== userId) {
