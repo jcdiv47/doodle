@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { ConvexError } from "convex/values";
 import { auth } from "./auth";
+import { sha256Hex } from "./lib/hash";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,12 +33,18 @@ http.route({
   path: "/api/bookmark",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const token = process.env.API_BEARER_TOKEN;
-    if (!token) {
-      return jsonResponse({ error: "Server misconfiguration: API_BEARER_TOKEN not set" }, 500);
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
-    const auth = request.headers.get("Authorization");
-    if (!auth || auth !== `Bearer ${token}`) {
+    const token = authHeader.slice("Bearer ".length);
+    if (!token) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const keyHash = await sha256Hex(token);
+    const apiKey = await ctx.runQuery(internal.apiKeys.lookupByKey, { keyHash });
+    if (!apiKey) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
@@ -73,7 +80,11 @@ http.route({
       const id = await ctx.runMutation(internal.bookmarks.addFromApi, {
         url: url as string,
         tags: tags as string[] | undefined,
+        userId: apiKey.userId,
       });
+
+      await ctx.runMutation(internal.apiKeys.recordUsage, { keyId: apiKey._id });
+
       return jsonResponse({ id, url: (url as string).trim() }, 201);
     } catch (e) {
       if (e instanceof ConvexError) {

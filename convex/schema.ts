@@ -51,6 +51,17 @@ export default defineSchema({
     signature: v.optional(v.string()),
   }).index("signature", ["signature"]),
 
+  apiKeys: defineTable({
+    userId: v.id("users"),
+    keyHash: v.string(),
+    prefix: v.string(),
+    name: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_hash", ["keyHash"]),
+
   bookmarks: defineTable({
     url: v.string(),
     title: v.string(),

@@ -8,10 +8,12 @@
  * @module
  */
 
+import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
 import type * as bookmarks from "../bookmarks.js";
 import type * as fetch from "../fetch.js";
 import type * as http from "../http.js";
+import type * as lib_hash from "../lib/hash.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,10 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  apiKeys: typeof apiKeys;
   auth: typeof auth;
   bookmarks: typeof bookmarks;
   fetch: typeof fetch;
   http: typeof http;
+  "lib/hash": typeof lib_hash;
   users: typeof users;
 }>;
 

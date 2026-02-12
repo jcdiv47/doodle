@@ -12,11 +12,13 @@ import { AddBookmark } from "./AddBookmark";
 import { BookmarkList } from "./BookmarkList";
 import { TagFilter } from "./TagFilter";
 import { SignIn } from "./SignIn";
+import { ApiKeySettings } from "./ApiKeySettings";
 
 function UserBadge() {
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,6 +70,15 @@ function UserBadge() {
             )}
           </div>
           <button
+            onClick={() => {
+              setApiKeysOpen(true);
+              setOpen(false);
+            }}
+            className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
+          >
+            api keys
+          </button>
+          <button
             onClick={() => void signOut()}
             className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
           >
@@ -75,6 +86,10 @@ function UserBadge() {
           </button>
         </div>
       )}
+      <ApiKeySettings
+        isOpen={apiKeysOpen}
+        onClose={() => setApiKeysOpen(false)}
+      />
     </div>
   );
 }

@@ -115,7 +115,7 @@ export const add = mutation({
 });
 
 export const addFromApi = internalMutation({
-  args: { url: v.string(), tags: v.optional(v.array(v.string())), userId: v.optional(v.id("users")) },
+  args: { url: v.string(), tags: v.optional(v.array(v.string())), userId: v.id("users") },
   returns: v.id("bookmarks"),
   handler: async (ctx, args) => {
     const url = args.url.trim();
@@ -123,7 +123,7 @@ export const addFromApi = internalMutation({
       .query("bookmarks")
       .withIndex("by_url", (q) => q.eq("url", url))
       .first();
-    if (existing) {
+    if (existing && existing.userId === args.userId) {
       throw new ConvexError("This URL has already been bookmarked");
     }
     const tags = args.tags
@@ -131,21 +131,13 @@ export const addFromApi = internalMutation({
       : undefined;
     const searchText = [url, ...(tags ?? [])].join(" ");
 
-    // Use provided userId or get the first user as fallback for API-driven bookmarks
-    let userId = args.userId;
-    if (!userId) {
-      const firstUser = await ctx.db.query("users").first();
-      if (!firstUser) throw new ConvexError("No users exist yet");
-      userId = firstUser._id;
-    }
-
     const id = await ctx.db.insert("bookmarks", {
       url,
       title: url,
       description: "",
       searchText,
       tags: tags && tags.length > 0 ? tags : undefined,
-      userId,
+      userId: args.userId,
     });
     await ctx.scheduler.runAfter(0, internal.fetch.fetchMetadata, {
       bookmarkId: id,
