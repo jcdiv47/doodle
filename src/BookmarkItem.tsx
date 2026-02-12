@@ -1,7 +1,8 @@
-import { useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
+import { TagInput } from "./TagInput";
 import type { Doc } from "../convex/_generated/dataModel";
 
 export function BookmarkItem({
@@ -13,11 +14,9 @@ export function BookmarkItem({
 }) {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
-  const [tagValue, setTagValue] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemoveTag, setConfirmRemoveTag] = useState<string | null>(null);
   const remove = useMutation(api.bookmarks.remove);
-  const addTag = useMutation(api.bookmarks.addTag);
   const removeTag = useMutation(api.bookmarks.removeTag);
   const trackRead = useMutation(api.bookmarks.trackRead);
 
@@ -38,24 +37,6 @@ export function BookmarkItem({
     setConfirmRemoveTag(null);
   };
 
-  const handleAddTag = async () => {
-    const tag = tagValue.trim().toLowerCase();
-    if (!tag) return;
-    await addTag({ bookmarkId: bookmark._id, tag });
-    setTagValue("");
-    setShowTagInput(false);
-  };
-
-  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    } else if (e.key === "Escape") {
-      setTagValue("");
-      setShowTagInput(false);
-    }
-  };
-
   const domain = (() => {
     try {
       return new URL(bookmark.url).hostname.replace(/^www\./, "");
@@ -68,7 +49,7 @@ export function BookmarkItem({
 
   return (
     <div
-      className="animate-fade-in-up bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter"
+      className={`animate-fade-in-up bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter ${showTagInput ? "relative z-10" : ""}`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-start gap-3">
@@ -176,22 +157,11 @@ export function BookmarkItem({
           )}
 
           {showTagInput && (
-            <div className="mt-1.5">
-              <input
-                type="text"
-                value={tagValue}
-                onChange={(e) => setTagValue(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                onBlur={() => {
-                  if (!tagValue.trim()) {
-                    setShowTagInput(false);
-                  }
-                }}
-                placeholder="tag name..."
-                className="w-32 border border-zinc-border bg-charcoal px-2 py-1 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
-                autoFocus
-              />
-            </div>
+            <TagInput
+              bookmarkId={bookmark._id}
+              existingTags={tags}
+              onClose={() => setShowTagInput(false)}
+            />
           )}
 
           <div className="mt-2 flex gap-3">
