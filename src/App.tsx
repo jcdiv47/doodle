@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  Authenticated,
-  Unauthenticated,
-  AuthLoading,
+  useConvexAuth,
   useQuery,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -13,7 +11,23 @@ import { SignIn } from "./SignIn";
 import { ApiKeySettings } from "./ApiKeySettings";
 import { authClient } from "./lib/auth-client";
 
-function UserBadge() {
+function hasOAuthCallbackTokenInUrl() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("ott");
+}
+
+function hasOAuthErrorInUrl() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("error") || params.has("error_description");
+}
+
+function UserBadge({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const user = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
@@ -77,7 +91,7 @@ function UserBadge() {
             api keys
           </button>
           <button
-            onClick={() => void authClient.signOut()}
+            onClick={() => void onSignOut()}
             className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
           >
             sign out
@@ -92,7 +106,11 @@ function UserBadge() {
   );
 }
 
-function BookmarkApp() {
+function BookmarkApp({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"createdAt" | "readCount">("createdAt");
@@ -127,7 +145,7 @@ function BookmarkApp() {
           </div>
           <div className="flex items-center gap-4">
             <AddBookmark />
-            <UserBadge />
+            <UserBadge onSignOut={onSignOut} />
           </div>
         </header>
 
@@ -183,25 +201,64 @@ function LoadingScreen() {
   );
 }
 
-function AuthenticatedContent() {
+function AuthenticatedContent({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const user = useQuery(api.users.me);
 
   if (user === undefined) return <LoadingScreen />;
-  return <BookmarkApp />;
+  return <BookmarkApp onSignOut={onSignOut} />;
 }
 
 export default function App() {
-  return (
-    <>
-      <AuthLoading>
-        <LoadingScreen />
-      </AuthLoading>
-      <Unauthenticated>
-        <SignIn />
-      </Unauthenticated>
-      <Authenticated>
-        <AuthenticatedContent />
-      </Authenticated>
-    </>
-  );
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const latestAuthStateRef = useRef({ isAuthenticated, isLoading });
+  const isProcessingOAuthCallbackRef = useRef(hasOAuthCallbackTokenInUrl());
+
+  latestAuthStateRef.current = { isAuthenticated, isLoading };
+  if (hasOAuthCallbackTokenInUrl()) {
+    isProcessingOAuthCallbackRef.current = true;
+  }
+  if (isAuthenticated || hasOAuthErrorInUrl()) {
+    isProcessingOAuthCallbackRef.current = false;
+  }
+
+  const handleSignOut = useCallback(async () => {
+    setIsSigningOut(true);
+    try {
+      await authClient.signOut();
+      let stableUnauthedTicks = 0;
+      for (let i = 0; i < 120; i++) {
+        const latestAuthState = latestAuthStateRef.current;
+        if (!latestAuthState.isLoading && !latestAuthState.isAuthenticated) {
+          stableUnauthedTicks += 1;
+          if (stableUnauthedTicks >= 5) {
+            break;
+          }
+        } else {
+          stableUnauthedTicks = 0;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    } catch {
+      // noop: users remain on the authenticated screen when sign-out fails.
+    } finally {
+      setIsSigningOut(false);
+    }
+  }, []);
+
+  const isProcessingOAuthCallback = isProcessingOAuthCallbackRef.current;
+
+  if (isLoading || isSigningOut || isProcessingOAuthCallback) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <SignIn />;
+  }
+
+  return <AuthenticatedContent onSignOut={handleSignOut} />;
 }
