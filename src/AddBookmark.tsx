@@ -28,7 +28,8 @@ export function AddBookmark() {
   const addBookmark = useMutation(api.bookmarks.add).withOptimisticUpdate(
     (localStore, args) => {
       const current = localStore.getQuery(api.bookmarks.list, {});
-      if (current !== undefined) {
+      const user = localStore.getQuery(api.users.me, {});
+      if (current !== undefined && user) {
         localStore.setQuery(api.bookmarks.list, {}, [
           {
             _id: `optimistic_${Date.now()}` as unknown as Id<"bookmarks">,
@@ -41,6 +42,7 @@ export function AddBookmark() {
             notes: args.notes,
             tags: undefined,
             readCount: undefined,
+            userId: user._id,
           },
           ...current,
         ]);
