@@ -14,7 +14,7 @@ const bookmarkFields = v.object({
   favicon: v.optional(v.string()),
   tags: v.optional(v.array(v.string())),
   readCount: v.optional(v.number()),
-  userId: v.optional(v.id("users")),
+  userId: v.id("users"),
 });
 
 export const list = query({

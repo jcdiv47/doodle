@@ -2,7 +2,7 @@ import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { DataModel } from "./_generated/dataModel";
-import type { GenericDatabaseWriter } from "convex/server";
+import type { GenericDatabaseReader } from "convex/server";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [GitHub, Google],
@@ -13,10 +13,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return args.existingUserId;
       }
 
-      // Check if a user with this email already exists (account linking)
-      const email = args.profile.email;
+      // Check if a user with this email already exists (account linking).
+      // Cast needed because the callback ctx.db is untyped by convex-auth.
+      const email = args.profile.email as string | undefined;
       if (email) {
-        const db = ctx.db as unknown as GenericDatabaseWriter<DataModel>;
+        const db = ctx.db as unknown as GenericDatabaseReader<DataModel>;
         const existingUser = await db
           .query("users")
           .withIndex("email", (q) => q.eq("email", email))

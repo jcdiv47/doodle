@@ -71,7 +71,7 @@ export default defineSchema({
     favicon: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     readCount: v.optional(v.number()),
-    userId: v.optional(v.id("users")),
+    userId: v.id("users"),
   })
     .index("by_url", ["url"])
     .index("by_user", ["userId"])
