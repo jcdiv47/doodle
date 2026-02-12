@@ -9,6 +9,7 @@ import { BookmarkList } from "./BookmarkList";
 import { TagFilter } from "./TagFilter";
 import { SignIn } from "./SignIn";
 import { ApiKeySettings } from "./ApiKeySettings";
+import { PasskeySettings } from "./PasskeySettings";
 import { authClient } from "./lib/auth-client";
 
 function hasOAuthCallbackTokenInUrl() {
@@ -31,6 +32,7 @@ function UserBadge({
   const user = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [passkeysOpen, setPasskeysOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,6 +85,15 @@ function UserBadge({
           </div>
           <button
             onClick={() => {
+              setPasskeysOpen(true);
+              setOpen(false);
+            }}
+            className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
+          >
+            passkeys
+          </button>
+          <button
+            onClick={() => {
               setApiKeysOpen(true);
               setOpen(false);
             }}
@@ -101,6 +112,10 @@ function UserBadge({
       <ApiKeySettings
         isOpen={apiKeysOpen}
         onClose={() => setApiKeysOpen(false)}
+      />
+      <PasskeySettings
+        isOpen={passkeysOpen}
+        onClose={() => setPasskeysOpen(false)}
       />
     </div>
   );

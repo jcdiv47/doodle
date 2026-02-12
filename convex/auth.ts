@@ -1,6 +1,7 @@
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth";
+import { passkey } from "@better-auth/passkey";
 import type { BetterAuthOptions } from "better-auth";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
@@ -26,7 +27,29 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+function hostnameFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "localhost";
+  }
+}
+
 const siteUrl = env("SITE_URL") ?? env("VITE_SITE_URL") ?? "http://localhost:5173";
+const passkeyOrigin = env("AUTH_PASSKEY_ORIGIN") ?? siteUrl;
+const passkeyRpName = env("AUTH_PASSKEY_RP_NAME") ?? "bookmarks";
+const passkeyRpId = env("AUTH_PASSKEY_RP_ID") ?? hostnameFromUrl(passkeyOrigin);
+const trustedOrigins = Array.from(new Set([siteUrl, passkeyOrigin]));
+
+if (process.env.NODE_ENV !== "production") {
+  // Log effective passkey settings in dev to quickly catch origin/RP mismatches.
+  console.log("[auth] passkey settings", {
+    passkeyOrigin,
+    passkeyRpId,
+    passkeyRpName,
+    trustedOrigins,
+  });
+}
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
@@ -71,8 +94,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
         },
       },
     },
-    trustedOrigins: [siteUrl],
+    trustedOrigins,
     plugins: [
+      passkey({
+        rpID: passkeyRpId,
+        rpName: passkeyRpName,
+        origin: passkeyOrigin,
+      }),
       convex({
         authConfig,
       }),

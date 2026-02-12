@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { passkeyClient } from "@better-auth/passkey/client";
 import {
   convexClient,
   crossDomainClient,
@@ -14,7 +15,7 @@ function requiredViteEnv(name: "VITE_CONVEX_SITE_URL"): string {
 
 export const authClient = createAuthClient({
   baseURL: requiredViteEnv("VITE_CONVEX_SITE_URL"),
-  plugins: [convexClient(), crossDomainClient()],
+  plugins: [convexClient(), crossDomainClient(), passkeyClient()],
 });
 
 export const oauthProviders = ["github", "google"] as const;
