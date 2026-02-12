@@ -1,45 +1,111 @@
-import GitHub from "@auth/core/providers/github";
-import Google from "@auth/core/providers/google";
-import { convexAuth } from "@convex-dev/auth/server";
+import { createClient } from "@convex-dev/better-auth";
+import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
+import { betterAuth } from "better-auth";
+import { passkey } from "@better-auth/passkey";
+import type { BetterAuthOptions } from "better-auth";
+import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
-import type { GenericDatabaseReader } from "convex/server";
+import { components } from "./_generated/api";
+import authConfig from "./auth.config";
 
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [GitHub, Google],
-  callbacks: {
-    async createOrUpdateUser(ctx, args) {
-      if (args.existingUserId) {
-        // Existing user signing in — always allow
-        return args.existingUserId;
-      }
+const signupDisabled = process.env.SIGNUP_DISABLED === "true";
 
-      // Normalize email to lowercase for consistent matching and storage.
-      const rawEmail = args.profile.email as string | undefined;
-      const email = rawEmail?.toLowerCase();
+function env(name: string): string | undefined {
+  const value = process.env[name];
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
 
-      // Check if a user with this email already exists (account linking).
-      // Cast needed because the callback ctx.db is untyped by convex-auth.
-      if (email) {
-        const db = ctx.db as unknown as GenericDatabaseReader<DataModel>;
-        const existingUser = await db
-          .query("users")
-          .withIndex("email", (q) => q.eq("email", email))
-          .unique();
-        if (existingUser) {
-          return existingUser._id;
-        }
-      }
+function requiredEnv(name: string): string {
+  const value = env(name);
+  if (!value) {
+    throw new Error(`${name} must be set`);
+  }
+  return value;
+}
 
-      // New user sign-up — block and let client render a graceful message
-      // after redirecting back to the sign-in page.
-      if (process.env.SIGNUP_DISABLED === "true") {
-        throw new Error("Signup is disabled");
-      }
+function hostnameFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "localhost";
+  }
+}
 
-      const profile = email
-        ? { ...args.profile, email }
-        : args.profile;
-      return await ctx.db.insert("users", profile);
+const siteUrl = env("SITE_URL") ?? env("VITE_SITE_URL") ?? "http://localhost:5173";
+const passkeyOrigin = env("AUTH_PASSKEY_ORIGIN") ?? siteUrl;
+const passkeyRpName = env("AUTH_PASSKEY_RP_NAME") ?? "bookmarks";
+const passkeyRpId = env("AUTH_PASSKEY_RP_ID") ?? hostnameFromUrl(passkeyOrigin);
+const trustedOrigins = Array.from(new Set([siteUrl, passkeyOrigin]));
+
+if (process.env.NODE_ENV !== "production") {
+  // Log effective passkey settings in dev to quickly catch origin/RP mismatches.
+  console.log("[auth] passkey settings", {
+    passkeyOrigin,
+    passkeyRpId,
+    passkeyRpName,
+    trustedOrigins,
+  });
+}
+
+export const authComponent = createClient<DataModel>(components.betterAuth);
+
+export const createAuth = (ctx: GenericCtx<DataModel>) =>
+  betterAuth({
+    database: authComponent.adapter(ctx),
+    baseURL: requiredEnv("CONVEX_SITE_URL"),
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["github", "google"],
+        allowDifferentEmails: false,
+        updateUserInfoOnLink: true,
+      },
     },
-  },
-});
+    socialProviders: {
+      github: {
+        clientId: requiredEnv("AUTH_GITHUB_ID"),
+        clientSecret: requiredEnv("AUTH_GITHUB_SECRET"),
+        disableSignUp: signupDisabled,
+      },
+      google: {
+        clientId: requiredEnv("AUTH_GOOGLE_ID"),
+        clientSecret: requiredEnv("AUTH_GOOGLE_SECRET"),
+        disableSignUp: signupDisabled,
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => {
+            if (signupDisabled) {
+              return false;
+            }
+            return {
+              data: {
+                ...user,
+                email: user.email.toLowerCase(),
+              },
+            };
+          },
+        },
+      },
+    },
+    trustedOrigins,
+    plugins: [
+      passkey({
+        rpID: passkeyRpId,
+        rpName: passkeyRpName,
+        origin: passkeyOrigin,
+      }),
+      convex({
+        authConfig,
+      }),
+      crossDomain({ siteUrl }),
+    ],
+  } satisfies BetterAuthOptions);
+
+export const { getAuthUser } = authComponent.clientApi();

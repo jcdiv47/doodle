@@ -1,24 +1,38 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  Authenticated,
-  Unauthenticated,
-  AuthLoading,
   useConvexAuth,
   useQuery,
 } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../convex/_generated/api";
 import { AddBookmark } from "./AddBookmark";
 import { BookmarkList } from "./BookmarkList";
 import { TagFilter } from "./TagFilter";
 import { SignIn } from "./SignIn";
 import { ApiKeySettings } from "./ApiKeySettings";
+import { PasskeySettings } from "./PasskeySettings";
+import { authClient } from "./lib/auth-client";
 
-function UserBadge() {
-  const { signOut } = useAuthActions();
+function hasOAuthCallbackTokenInUrl() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("ott");
+}
+
+function hasOAuthErrorInUrl() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("error") || params.has("error_description");
+}
+
+function UserBadge({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const user = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [passkeysOpen, setPasskeysOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,6 +85,15 @@ function UserBadge() {
           </div>
           <button
             onClick={() => {
+              setPasskeysOpen(true);
+              setOpen(false);
+            }}
+            className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
+          >
+            passkeys
+          </button>
+          <button
+            onClick={() => {
               setApiKeysOpen(true);
               setOpen(false);
             }}
@@ -79,7 +102,7 @@ function UserBadge() {
             api keys
           </button>
           <button
-            onClick={() => void signOut()}
+            onClick={() => void onSignOut()}
             className="w-full px-4 py-2.5 text-left font-mono text-xs text-zinc-text transition-colors hover:bg-charcoal hover:text-white"
           >
             sign out
@@ -90,11 +113,19 @@ function UserBadge() {
         isOpen={apiKeysOpen}
         onClose={() => setApiKeysOpen(false)}
       />
+      <PasskeySettings
+        isOpen={passkeysOpen}
+        onClose={() => setPasskeysOpen(false)}
+      />
     </div>
   );
 }
 
-function BookmarkApp() {
+function BookmarkApp({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"createdAt" | "readCount">("createdAt");
@@ -129,7 +160,7 @@ function BookmarkApp() {
           </div>
           <div className="flex items-center gap-4">
             <AddBookmark />
-            <UserBadge />
+            <UserBadge onSignOut={onSignOut} />
           </div>
         </header>
 
@@ -185,78 +216,64 @@ function LoadingScreen() {
   );
 }
 
-function AuthenticatedContent() {
+function AuthenticatedContent({
+  onSignOut,
+}: {
+  onSignOut: () => Promise<void>;
+}) {
   const user = useQuery(api.users.me);
 
   if (user === undefined) return <LoadingScreen />;
-  return <BookmarkApp />;
-}
-
-function UnauthenticatedContent({
-  isAuthenticated,
-  hasCodeParam,
-  hasOAuthParam,
-}: {
-  isAuthenticated: boolean;
-  hasCodeParam: boolean;
-  hasOAuthParam: boolean;
-}) {
-  const [oauthGraceExpired, setOAuthGraceExpired] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated || !hasOAuthParam) return;
-    const timeoutId = window.setTimeout(() => {
-      setOAuthGraceExpired(true);
-    }, 3500);
-    return () => window.clearTimeout(timeoutId);
-  }, [isAuthenticated, hasOAuthParam]);
-
-  const pendingOAuth =
-    !isAuthenticated && (hasCodeParam || (hasOAuthParam && !oauthGraceExpired));
-
-  return pendingOAuth ? <LoadingScreen /> : <SignIn />;
+  return <BookmarkApp onSignOut={onSignOut} />;
 }
 
 export default function App() {
-  const { isAuthenticated } = useConvexAuth();
-  const searchParams = new URLSearchParams(window.location.search);
-  const hasCodeParam = searchParams.has("code");
-  const hasOAuthParam = searchParams.has("oauth");
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const latestAuthStateRef = useRef({ isAuthenticated, isLoading });
+  const isProcessingOAuthCallbackRef = useRef(hasOAuthCallbackTokenInUrl());
 
-  // Clean up OAuth query params once the session is established.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const url = new URL(window.location.href);
-    const hadOAuthParams =
-      url.searchParams.has("code") ||
-      url.searchParams.has("state") ||
-      url.searchParams.has("oauth") ||
-      url.searchParams.has("oauth_error");
-    if (!hadOAuthParams) return;
+  latestAuthStateRef.current = { isAuthenticated, isLoading };
+  if (hasOAuthCallbackTokenInUrl()) {
+    isProcessingOAuthCallbackRef.current = true;
+  }
+  if (isAuthenticated || hasOAuthErrorInUrl()) {
+    isProcessingOAuthCallbackRef.current = false;
+  }
 
-    url.searchParams.delete("code");
-    url.searchParams.delete("state");
-    url.searchParams.delete("oauth");
-    url.searchParams.delete("oauth_error");
-    window.history.replaceState({}, "", url.toString());
-  }, [isAuthenticated]);
+  const handleSignOut = useCallback(async () => {
+    setIsSigningOut(true);
+    try {
+      await authClient.signOut();
+      let stableUnauthedTicks = 0;
+      for (let i = 0; i < 120; i++) {
+        const latestAuthState = latestAuthStateRef.current;
+        if (!latestAuthState.isLoading && !latestAuthState.isAuthenticated) {
+          stableUnauthedTicks += 1;
+          if (stableUnauthedTicks >= 5) {
+            break;
+          }
+        } else {
+          stableUnauthedTicks = 0;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    } catch {
+      // noop: users remain on the authenticated screen when sign-out fails.
+    } finally {
+      setIsSigningOut(false);
+    }
+  }, []);
 
-  return (
-    <>
-      <AuthLoading>
-        <LoadingScreen />
-      </AuthLoading>
-      <Unauthenticated>
-        <UnauthenticatedContent
-          key={hasOAuthParam ? "oauth-pending" : "default"}
-          isAuthenticated={isAuthenticated}
-          hasCodeParam={hasCodeParam}
-          hasOAuthParam={hasOAuthParam}
-        />
-      </Unauthenticated>
-      <Authenticated>
-        <AuthenticatedContent />
-      </Authenticated>
-    </>
-  );
+  const isProcessingOAuthCallback = isProcessingOAuthCallbackRef.current;
+
+  if (isLoading || isSigningOut || isProcessingOAuthCallback) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <SignIn />;
+  }
+
+  return <AuthenticatedContent onSignOut={handleSignOut} />;
 }

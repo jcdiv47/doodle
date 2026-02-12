@@ -29,7 +29,7 @@ export function AddBookmark() {
     (localStore, args) => {
       const current = localStore.getQuery(api.bookmarks.list, {});
       const user = localStore.getQuery(api.users.me, {});
-      if (current !== undefined && user) {
+      if (current !== undefined && user?._id) {
         localStore.setQuery(api.bookmarks.list, {}, [
           {
             _id: `optimistic_${Date.now()}` as unknown as Id<"bookmarks">,
@@ -139,9 +139,11 @@ export function AddBookmark() {
     <>
       <button
         onClick={() => setIsOpen(true)}
+        aria-label="add bookmark"
         className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
       >
-        + add bookmark
+        <span className="sm:hidden">+</span>
+      <span className="hidden sm:inline">+ add bookmark</span>
       </button>
 
       {isOpen &&

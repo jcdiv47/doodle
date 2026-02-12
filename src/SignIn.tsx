@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { authClient, type OAuthProvider } from "./lib/auth-client";
+import { getPasskeySupportDetails, getPasskeyUnsupportedMessage } from "./lib/passkey-support";
 
 function getInitialOAuthError(): string | null {
   const params = new URLSearchParams(window.location.search);
-  const oauthError = params.get("oauth_error");
-  const hadOAuthSignal = params.has("oauth") || oauthError !== null;
-  if (hadOAuthSignal) {
-    params.delete("oauth");
-    params.delete("oauth_error");
+  const oauthError = params.get("error");
+  const oauthErrorDescription = params.get("error_description");
+  if (oauthError || oauthErrorDescription) {
+    params.delete("error");
+    params.delete("error_description");
     const qs = params.toString();
     window.history.replaceState(
       {},
       "",
       qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
     );
-    if (oauthError === "signup_disabled") {
+    const normalizedError = `${oauthError ?? ""} ${oauthErrorDescription ?? ""}`
+      .toLowerCase()
+      .trim();
+    if (normalizedError.includes("sign up")) {
       return "you are not allowed to sign up at the moment.";
     }
     return "sign-in failed. please try again.";
@@ -23,17 +27,49 @@ function getInitialOAuthError(): string | null {
 }
 
 export function SignIn() {
-  const { signIn } = useAuthActions();
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState<OAuthProvider | "passkey" | null>(null);
   const [error, setError] = useState<string | null>(getInitialOAuthError);
 
-  const handleOAuth = (provider: string) => {
+  const handleOAuth = (provider: OAuthProvider) => {
     setError(null);
     setLoading(provider);
-    void signIn(provider, { redirectTo: "/?oauth=1" }).catch((e) => {
-      setError(e instanceof Error ? e.message : "Sign-in failed");
-      setLoading(null);
-    });
+    const callbackURL = `${window.location.origin}/`;
+    void authClient.signIn
+      .social({ provider, callbackURL })
+      .then((response) => {
+        if (response.error) {
+          setError(response.error.message ?? "sign-in failed");
+          setLoading(null);
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "sign-in failed");
+        setLoading(null);
+      });
+  };
+
+  const handlePasskey = () => {
+    const unsupportedMessage = getPasskeyUnsupportedMessage();
+    if (unsupportedMessage) {
+      const details = getPasskeySupportDetails();
+      console.warn("[passkey] unsupported", details);
+      setError(unsupportedMessage);
+      return;
+    }
+    setError(null);
+    setLoading("passkey");
+    void authClient.signIn
+      .passkey()
+      .then((response) => {
+        if (response.error) {
+          setError(response.error.message ?? "passkey sign-in failed");
+          setLoading(null);
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "passkey sign-in failed");
+        setLoading(null);
+      });
   };
 
   return (
@@ -76,6 +112,24 @@ export function SignIn() {
                 <path fill="#EA4335" d="M8 3.18c1.17 0 2.23.4 3.06 1.2l2.29-2.3A7.97 7.97 0 008 0 7.999 7.999 0 00.85 4.41l2.67 2.07C4.15 4.59 5.92 3.18 8 3.18z" />
               </svg>
               {loading === "google" ? "redirecting..." : "continue with google"}
+            </button>
+
+            <button
+              onClick={handlePasskey}
+              disabled={loading !== null}
+              className="flex w-full items-center justify-center gap-3 border border-zinc-border bg-charcoal-light py-3 font-mono text-sm text-white transition-colors hover:border-zinc-text disabled:opacity-50"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.2"
+              >
+                <rect x="1.5" y="7.5" width="13" height="7" rx="1.5" />
+                <path d="M4.5 7.5V5a3.5 3.5 0 017 0v2.5" />
+              </svg>
+              {loading === "passkey" ? "verifying..." : "continue with passkey"}
             </button>
           </div>
 

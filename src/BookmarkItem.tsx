@@ -118,23 +118,21 @@ export function BookmarkItem({
                     <>
                       <button
                         onClick={() => setConfirmRemoveTag(null)}
-                        className="text-zinc-text transition-colors hover:text-white"
-                        aria-label="Cancel"
+                        className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
                       >
-                        &times;
+                        cancel
                       </button>
                       <button
                         onClick={() => handleRemoveTag(tag)}
-                        className="text-red-400 transition-colors hover:text-red-300"
-                        aria-label="Confirm remove"
+                        className="font-mono text-xs text-red-400 transition-colors hover:text-red-300"
                       >
-                        &larr;
+                        confirm
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={() => handleRemoveTag(tag)}
-                      className="text-amber/30 transition-colors hover:text-red-400"
+                      className="font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
                       aria-label={`Remove tag ${tag}`}
                     >
                       &times;
