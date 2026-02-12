@@ -139,9 +139,11 @@ export function AddBookmark() {
     <>
       <button
         onClick={() => setIsOpen(true)}
+        aria-label="add bookmark"
         className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
       >
-        + add bookmark
+        <span className="sm:hidden">+</span>
+      <span className="hidden sm:inline">+ add bookmark</span>
       </button>
 
       {isOpen &&
