@@ -75,5 +75,9 @@ export default defineSchema({
   })
     .index("by_url", ["url"])
     .index("by_user", ["userId"])
-    .searchIndex("search_bookmarks", { searchField: "searchText" }),
+    .index("by_user_url", ["userId", "url"])
+    .searchIndex("search_bookmarks", {
+      searchField: "searchText",
+      filterFields: ["userId"],
+    }),
 });

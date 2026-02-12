@@ -37,13 +37,12 @@ export const search = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    const results = await ctx.db
+    return await ctx.db
       .query("bookmarks")
       .withSearchIndex("search_bookmarks", (q) =>
-        q.search("searchText", args.query)
+        q.search("searchText", args.query).eq("userId", userId)
       )
       .collect();
-    return results.filter((b) => b.userId === userId);
   },
 });
 
@@ -84,9 +83,9 @@ export const add = mutation({
     const url = args.url.trim();
     const existing = await ctx.db
       .query("bookmarks")
-      .withIndex("by_url", (q) => q.eq("url", url))
-      .first();
-    if (existing && existing.userId === userId) {
+      .withIndex("by_user_url", (q) => q.eq("userId", userId).eq("url", url))
+      .unique();
+    if (existing) {
       return null;
     }
     const title = args.title || url;
@@ -121,9 +120,11 @@ export const addFromApi = internalMutation({
     const url = args.url.trim();
     const existing = await ctx.db
       .query("bookmarks")
-      .withIndex("by_url", (q) => q.eq("url", url))
-      .first();
-    if (existing && existing.userId === args.userId) {
+      .withIndex("by_user_url", (q) =>
+        q.eq("userId", args.userId).eq("url", url)
+      )
+      .unique();
+    if (existing) {
       throw new ConvexError("This URL has already been bookmarked");
     }
     const tags = args.tags

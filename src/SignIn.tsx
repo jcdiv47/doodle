@@ -3,15 +3,21 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 function getInitialOAuthError(): string | null {
   const params = new URLSearchParams(window.location.search);
-  if (params.has("oauth")) {
+  const oauthError = params.get("oauth_error");
+  const hadOAuthSignal = params.has("oauth") || oauthError !== null;
+  if (hadOAuthSignal) {
     params.delete("oauth");
+    params.delete("oauth_error");
     const qs = params.toString();
     window.history.replaceState(
       {},
       "",
       qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
     );
-    return "you are not allowed to sign up at the moment.";
+    if (oauthError === "signup_disabled") {
+      return "you are not allowed to sign up at the moment.";
+    }
+    return "sign-in failed. please try again.";
   }
   return null;
 }

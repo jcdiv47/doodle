@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -29,24 +29,27 @@ export function ApiKeySettings({
   const [error, setError] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState<Id<"apiKeys"> | null>(null);
 
+  const resetFormState = useCallback(() => {
+    setName("");
+    setNewKey(null);
+    setCopied(false);
+    setError(null);
+    setConfirmRevoke(null);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    resetFormState();
+    onClose();
+  }, [onClose, resetFormState]);
+
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setName("");
-      setNewKey(null);
-      setCopied(false);
-      setError(null);
-      setConfirmRevoke(null);
-    }
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   const handleGenerate = async () => {
     const trimmed = name.trim();
@@ -84,7 +87,7 @@ export function ApiKeySettings({
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="mx-4 w-full max-w-lg border border-zinc-border bg-charcoal p-6"
@@ -93,7 +96,7 @@ export function ApiKeySettings({
         <div className="mb-4 flex items-center justify-between">
           <span className="font-mono text-sm text-amber">api keys</span>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
           >
             close

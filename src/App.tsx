@@ -192,32 +192,16 @@ function AuthenticatedContent() {
   return <BookmarkApp />;
 }
 
-export default function App() {
-  const { isAuthenticated } = useConvexAuth();
-  const searchParams = new URLSearchParams(window.location.search);
-  const hasCodeParam = searchParams.has("code");
-  const hasOAuthParam = searchParams.has("oauth");
+function UnauthenticatedContent({
+  isAuthenticated,
+  hasCodeParam,
+  hasOAuthParam,
+}: {
+  isAuthenticated: boolean;
+  hasCodeParam: boolean;
+  hasOAuthParam: boolean;
+}) {
   const [oauthGraceExpired, setOAuthGraceExpired] = useState(false);
-
-  // Clean up OAuth query params once the session is established.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const url = new URL(window.location.href);
-    const hadOAuthParams =
-      url.searchParams.has("code") ||
-      url.searchParams.has("state") ||
-      url.searchParams.has("oauth");
-    if (!hadOAuthParams) return;
-
-    url.searchParams.delete("code");
-    url.searchParams.delete("state");
-    url.searchParams.delete("oauth");
-    window.history.replaceState({}, "", url.toString());
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    setOAuthGraceExpired(false);
-  }, [hasOAuthParam]);
 
   useEffect(() => {
     if (isAuthenticated || !hasOAuthParam) return;
@@ -230,13 +214,45 @@ export default function App() {
   const pendingOAuth =
     !isAuthenticated && (hasCodeParam || (hasOAuthParam && !oauthGraceExpired));
 
+  return pendingOAuth ? <LoadingScreen /> : <SignIn />;
+}
+
+export default function App() {
+  const { isAuthenticated } = useConvexAuth();
+  const searchParams = new URLSearchParams(window.location.search);
+  const hasCodeParam = searchParams.has("code");
+  const hasOAuthParam = searchParams.has("oauth");
+
+  // Clean up OAuth query params once the session is established.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const url = new URL(window.location.href);
+    const hadOAuthParams =
+      url.searchParams.has("code") ||
+      url.searchParams.has("state") ||
+      url.searchParams.has("oauth") ||
+      url.searchParams.has("oauth_error");
+    if (!hadOAuthParams) return;
+
+    url.searchParams.delete("code");
+    url.searchParams.delete("state");
+    url.searchParams.delete("oauth");
+    url.searchParams.delete("oauth_error");
+    window.history.replaceState({}, "", url.toString());
+  }, [isAuthenticated]);
+
   return (
     <>
       <AuthLoading>
         <LoadingScreen />
       </AuthLoading>
       <Unauthenticated>
-        {pendingOAuth ? <LoadingScreen /> : <SignIn />}
+        <UnauthenticatedContent
+          key={hasOAuthParam ? "oauth-pending" : "default"}
+          isAuthenticated={isAuthenticated}
+          hasCodeParam={hasCodeParam}
+          hasOAuthParam={hasOAuthParam}
+        />
       </Unauthenticated>
       <Authenticated>
         <AuthenticatedContent />
