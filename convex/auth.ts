@@ -13,9 +13,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return args.existingUserId;
       }
 
+      // Normalize email to lowercase for consistent matching and storage.
+      const rawEmail = args.profile.email as string | undefined;
+      const email = rawEmail?.toLowerCase();
+
       // Check if a user with this email already exists (account linking).
       // Cast needed because the callback ctx.db is untyped by convex-auth.
-      const email = args.profile.email as string | undefined;
       if (email) {
         const db = ctx.db as unknown as GenericDatabaseReader<DataModel>;
         const existingUser = await db
@@ -33,7 +36,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         throw new Error("Signup is disabled");
       }
 
-      return await ctx.db.insert("users", args.profile);
+      const profile = email
+        ? { ...args.profile, email }
+        : args.profile;
+      return await ctx.db.insert("users", profile);
     },
   },
 });
