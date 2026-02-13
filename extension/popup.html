@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=380">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+  <title>Doodle Bookmark</title>
+</head>
+<body>
+  <!-- Main Panel -->
+  <div id="main-panel">
+    <header>
+      <h1>save bookmark</h1>
+      <button id="settings-btn" title="Settings" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Loading state -->
+    <div id="state-loading" class="state">
+      <p class="status-text">loading page info...</p>
+    </div>
+
+    <!-- No config state -->
+    <div id="state-noconfig" class="state hidden">
+      <p class="status-text">no api token configured</p>
+      <button id="goto-settings" class="btn-primary">configure settings</button>
+    </div>
+
+    <!-- Ready state (main form) -->
+    <div id="state-ready" class="state hidden">
+      <div id="preview">
+        <div id="preview-header">
+          <img id="preview-favicon" width="16" height="16" alt="">
+          <span id="preview-title" class="truncate"></span>
+        </div>
+        <span id="preview-url" class="truncate"></span>
+        <span id="preview-description"></span>
+      </div>
+
+      <div id="tags-section">
+        <label for="tag-input">tags</label>
+        <div id="tags-wrapper">
+          <div id="tags-container">
+            <div id="tags-list"></div>
+            <input type="text" id="tag-input" placeholder="type + enter" autocomplete="off">
+          </div>
+          <div id="tag-suggestions" class="hidden"></div>
+        </div>
+      </div>
+
+      <div id="notes-section">
+        <label for="notes-input">notes</label>
+        <textarea id="notes-input" placeholder="optional notes..." rows="2"></textarea>
+      </div>
+
+      <button id="save-btn" class="btn-primary">save</button>
+      <p id="shortcut-hint">ctrl+enter to save</p>
+    </div>
+
+    <!-- Saving state -->
+    <div id="state-saving" class="state hidden">
+      <p class="status-text">saving...</p>
+    </div>
+
+    <!-- Saved state -->
+    <div id="state-saved" class="state hidden">
+      <p class="status-text saved">bookmark saved</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="state-error" class="state hidden">
+      <p id="error-message" class="status-text error"></p>
+      <button id="retry-btn" class="btn-primary">retry</button>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-panel" class="hidden">
+    <header>
+      <button id="back-btn" title="Back" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <h1>settings</h1>
+    </header>
+
+    <div class="settings-form">
+      <div class="field">
+        <label for="deploy-url">deployment url</label>
+        <input type="url" id="deploy-url" placeholder="https://your-app.convex.site">
+      </div>
+
+      <div class="field">
+        <label for="api-token">api token</label>
+        <input type="password" id="api-token" placeholder="doodle_...">
+      </div>
+
+      <div class="settings-actions">
+        <button id="save-settings-btn" class="btn-primary">save</button>
+        <button id="test-btn" class="btn-secondary">test connection</button>
+      </div>
+
+      <p id="settings-status" class="status-text hidden"></p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

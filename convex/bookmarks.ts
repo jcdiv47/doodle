@@ -1,4 +1,5 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { getCurrentUserId, requireCurrentUserId } from "./lib/auth";
@@ -52,21 +53,45 @@ export const listTags = query({
   handler: async (ctx) => {
     const userId = await getCurrentUserId(ctx);
     if (!userId) return [];
-    const bookmarks = await ctx.db
-      .query("bookmarks")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    const tagSet = new Set<string>();
-    for (const bookmark of bookmarks) {
-      if (bookmark.tags) {
-        for (const tag of bookmark.tags) {
-          tagSet.add(tag);
-        }
-      }
-    }
-    return Array.from(tagSet).sort();
+    return collectTags(ctx, userId);
   },
 });
+
+export const listTagsByUser = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    return collectTags(ctx, args.userId);
+  },
+});
+
+export const listUrlsByUser = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    const bookmarks = await ctx.db
+      .query("bookmarks")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    return bookmarks.map((b) => b.url);
+  },
+});
+
+async function collectTags(ctx: QueryCtx, userId: Id<"users">) {
+  const bookmarks = await ctx.db
+    .query("bookmarks")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+  const tagSet = new Set<string>();
+  for (const bookmark of bookmarks) {
+    if (bookmark.tags) {
+      for (const tag of bookmark.tags) {
+        tagSet.add(tag);
+      }
+    }
+  }
+  return Array.from(tagSet).sort();
+}
 
 export const add = mutation({
   args: {
@@ -113,7 +138,7 @@ export const add = mutation({
 });
 
 export const addFromApi = internalMutation({
-  args: { url: v.string(), tags: v.optional(v.array(v.string())), userId: v.id("users") },
+  args: { url: v.string(), tags: v.optional(v.array(v.string())), notes: v.optional(v.string()), userId: v.id("users") },
   returns: v.id("bookmarks"),
   handler: async (ctx, args) => {
     const url = args.url.trim();
@@ -129,13 +154,15 @@ export const addFromApi = internalMutation({
     const tags = args.tags
       ? [...new Set(args.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))]
       : undefined;
-    const searchText = [url, ...(tags ?? [])].join(" ");
+    const notes = args.notes?.trim() || undefined;
+    const searchText = [url, notes || "", ...(tags ?? [])].filter(Boolean).join(" ");
 
     const id = await ctx.db.insert("bookmarks", {
       url,
       title: url,
       description: "",
       searchText,
+      notes,
       tags: tags && tags.length > 0 ? tags : undefined,
       userId: args.userId,
     });
