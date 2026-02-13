@@ -3,14 +3,20 @@ import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
 import { TagInput } from "./TagInput";
-import type { Doc } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 
 export function BookmarkItem({
   bookmark,
   index,
+  selectionMode,
+  isSelected,
+  onToggleSelection,
 }: {
   bookmark: Doc<"bookmarks">;
   index: number;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: (id: Id<"bookmarks">) => void;
 }) {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
@@ -49,15 +55,26 @@ export function BookmarkItem({
 
   return (
     <div
-      className={`animate-fade-in-up bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter ${showTagInput ? "relative z-10" : ""}`}
+      className={`animate-fade-in-up bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter ${showTagInput ? "relative z-10" : ""} ${selectionMode && isSelected ? "border-l-2 border-l-amber bg-amber/5" : ""}`}
       style={{ animationDelay: `${index * 50}ms` }}
+      onClick={selectionMode ? () => onToggleSelection?.(bookmark._id) : undefined}
+      role={selectionMode ? "button" : undefined}
     >
       <div className="flex items-start gap-3">
+        {selectionMode && (
+          <input
+            type="checkbox"
+            checked={isSelected ?? false}
+            onChange={() => onToggleSelection?.(bookmark._id)}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-amber"
+          />
+        )}
         {bookmark.favicon ? (
           <img
             src={bookmark.favicon}
             alt=""
-            className="mt-0.5 h-4 w-4 shrink-0"
+            className="mt-1 h-4 w-4 shrink-0"
             onError={(e) => {
               const el = e.target as HTMLImageElement;
               el.style.display = "none";
@@ -66,7 +83,7 @@ export function BookmarkItem({
           />
         ) : null}
         <svg
-          className={`mt-0.5 h-4 w-4 shrink-0 text-zinc-text${bookmark.favicon ? " hidden" : ""}`}
+          className={`mt-1 h-4 w-4 shrink-0 text-zinc-text${bookmark.favicon ? " hidden" : ""}`}
           viewBox="0 0 16 16"
           fill="none"
           stroke="currentColor"
@@ -107,7 +124,7 @@ export function BookmarkItem({
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className={`group inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-xs transition-colors ${
+                  className={`group inline-flex items-center border px-1.5 py-0.5 font-mono text-xs transition-colors ${
                     confirmRemoveTag === tag
                       ? "border-red-400/40 bg-red-400/10 text-red-400"
                       : "border-amber/20 bg-amber/5 text-amber/70"
@@ -115,7 +132,7 @@ export function BookmarkItem({
                 >
                   {confirmRemoveTag === tag ? "remove?" : tag}
                   {confirmRemoveTag === tag ? (
-                    <>
+                    <span className="ml-1 inline-flex gap-1">
                       <button
                         onClick={() => setConfirmRemoveTag(null)}
                         className="font-mono text-xs text-zinc-text transition-colors hover:text-white"
@@ -128,11 +145,11 @@ export function BookmarkItem({
                       >
                         confirm
                       </button>
-                    </>
+                    </span>
                   ) : (
                     <button
                       onClick={() => handleRemoveTag(tag)}
-                      className="font-mono text-xs text-zinc-text transition-colors hover:text-red-400"
+                      className="max-w-0 overflow-hidden font-mono text-xs text-zinc-text transition-all group-hover:ml-1 group-hover:max-w-4 group-hover:opacity-100 hover:text-red-400 opacity-0"
                       aria-label={`Remove tag ${tag}`}
                     >
                       &times;
@@ -154,7 +171,7 @@ export function BookmarkItem({
             </button>
           )}
 
-          {showTagInput && (
+          {!selectionMode && showTagInput && (
             <TagInput
               bookmarkId={bookmark._id}
               existingTags={tags}
@@ -162,43 +179,45 @@ export function BookmarkItem({
             />
           )}
 
-          <div className="mt-2 flex gap-3">
-            <button
-              onClick={() => setShowNoteModal(true)}
-              className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
-            >
-              {bookmark.notes ? "edit note" : "add note"}
-            </button>
-            <button
-              onClick={() => setShowTagInput(!showTagInput)}
-              className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
-            >
-              {showTagInput ? "close" : "add tag"}
-            </button>
-            {confirmDelete ? (
-              <span className="inline-flex gap-2">
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
-                >
-                  cancel
-                </button>
+          {!selectionMode && (
+            <div className="mt-2 flex gap-3">
+              <button
+                onClick={() => setShowNoteModal(true)}
+                className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
+              >
+                {bookmark.notes ? "edit note" : "add note"}
+              </button>
+              <button
+                onClick={() => setShowTagInput(!showTagInput)}
+                className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
+              >
+                {showTagInput ? "close" : "add tag"}
+              </button>
+              {confirmDelete ? (
+                <span className="inline-flex gap-2">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="font-mono text-sm text-zinc-text transition-colors hover:text-white"
+                  >
+                    cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="font-mono text-sm text-red-400 transition-colors hover:text-red-300"
+                  >
+                    confirm
+                  </button>
+                </span>
+              ) : (
                 <button
                   onClick={handleDelete}
-                  className="font-mono text-sm text-red-400 transition-colors hover:text-red-300"
+                  className="font-mono text-sm text-zinc-text transition-colors hover:text-red-400"
                 >
-                  confirm
+                  delete
                 </button>
-              </span>
-            ) : (
-              <button
-                onClick={handleDelete}
-                className="font-mono text-sm text-zinc-text transition-colors hover:text-red-400"
-              >
-                delete
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {showNoteModal && (

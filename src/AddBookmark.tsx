@@ -143,7 +143,7 @@ export function AddBookmark() {
         className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
       >
         <span className="sm:hidden">+</span>
-      <span className="hidden sm:inline">+ add bookmark</span>
+      <span className="hidden sm:inline">+</span>
       </button>
 
       {isOpen &&

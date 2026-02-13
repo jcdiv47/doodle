@@ -239,6 +239,47 @@ export const remove = mutation({
   },
 });
 
+export const bulkAddTag = mutation({
+  args: {
+    bookmarkIds: v.array(v.id("bookmarks")),
+    tag: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await requireCurrentUserId(ctx);
+    const tag = args.tag.trim().toLowerCase();
+    if (!tag) return null;
+    for (const bookmarkId of args.bookmarkIds) {
+      const bookmark = await ctx.db.get(bookmarkId);
+      if (!bookmark || bookmark.userId !== userId) continue;
+      const tags = bookmark.tags ?? [];
+      if (tags.includes(tag)) continue;
+      const newTags = [...tags, tag];
+      const searchText = [bookmark.url, bookmark.title, bookmark.description, bookmark.notes || "", ...newTags]
+        .filter(Boolean)
+        .join(" ");
+      await ctx.db.patch(bookmarkId, { tags: newTags, searchText });
+    }
+    return null;
+  },
+});
+
+export const bulkRemove = mutation({
+  args: {
+    bookmarkIds: v.array(v.id("bookmarks")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await requireCurrentUserId(ctx);
+    for (const bookmarkId of args.bookmarkIds) {
+      const bookmark = await ctx.db.get(bookmarkId);
+      if (!bookmark || bookmark.userId !== userId) continue;
+      await ctx.db.delete(bookmarkId);
+    }
+    return null;
+  },
+});
+
 export const updateMetadata = internalMutation({
   args: {
     bookmarkId: v.id("bookmarks"),

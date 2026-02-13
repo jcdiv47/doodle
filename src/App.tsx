@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import {
   useConvexAuth,
   useQuery,
@@ -10,7 +10,26 @@ import { TagFilter } from "./TagFilter";
 import { SignIn } from "./SignIn";
 import { ApiKeySettings } from "./ApiKeySettings";
 import { PasskeySettings } from "./PasskeySettings";
+import { Dashboard } from "./Dashboard";
+import { BulkActionBar } from "./BulkActionBar";
 import { authClient } from "./lib/auth-client";
+import type { Id } from "../convex/_generated/dataModel";
+
+function usePathname() {
+  const pathname = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("popstate", cb);
+      return () => window.removeEventListener("popstate", cb);
+    },
+    () => window.location.pathname,
+  );
+  return pathname;
+}
+
+function navigate(path: string) {
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
 function hasOAuthCallbackTokenInUrl() {
   if (typeof window === "undefined") return false;
@@ -130,6 +149,25 @@ function BookmarkApp({
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"createdAt" | "readCount">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<Id<"bookmarks">>>(new Set());
+
+  const handleToggleSelection = useCallback((id: Id<"bookmarks">) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
 
   const handleToggleTag = useCallback((tag: string) => {
     setSelectedTags((prev) => {
@@ -159,7 +197,13 @@ function BookmarkApp({
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <AddBookmark />
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="font-mono text-sm text-zinc-text transition-colors hover:text-amber"
+            >
+              stats
+            </button>
+            {!selectionMode && <AddBookmark />}
             <UserBadge onSignOut={onSignOut} />
           </div>
         </header>
@@ -202,8 +246,21 @@ function BookmarkApp({
           sortOrder={sortOrder}
           onSortByChange={setSortBy}
           onSortOrderChange={setSortOrder}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelection={handleToggleSelection}
+          onEnterSelectionMode={() => setSelectionMode(true)}
+          onExitSelectionMode={handleExitSelectionMode}
         />
       </div>
+
+      {selectionMode && (
+        <BulkActionBar
+          selectedIds={selectedIds}
+          onClearSelection={() => setSelectedIds(new Set())}
+          onExitSelectionMode={handleExitSelectionMode}
+        />
+      )}
     </div>
   );
 }
@@ -222,8 +279,14 @@ function AuthenticatedContent({
   onSignOut: () => Promise<void>;
 }) {
   const user = useQuery(api.users.me);
+  const pathname = usePathname();
 
   if (user === undefined) return <LoadingScreen />;
+
+  if (pathname === "/dashboard") {
+    return <Dashboard onNavigateBack={() => navigate("/")} />;
+  }
+
   return <BookmarkApp onSignOut={onSignOut} />;
 }
 
