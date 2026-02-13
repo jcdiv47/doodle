@@ -1,4 +1,3 @@
-import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { authComponent } from "../auth";
@@ -92,10 +91,6 @@ export async function requireCurrentUserId(ctx: MutationCtx): Promise<Id<"users"
       await ctx.db.patch(byEmail._id, next);
     }
     return byEmail._id;
-  }
-
-  if (process.env.SIGNUP_DISABLED === "true") {
-    throw new ConvexError("Signup is disabled");
   }
 
   return await ctx.db.insert("users", next);
