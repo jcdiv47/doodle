@@ -4,15 +4,42 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
+function resolveHref(href: string, urlObj: URL): string {
+  if (href.startsWith("http")) return href;
+  if (href.startsWith("//")) return urlObj.protocol + href;
+  if (href.startsWith("/")) return urlObj.origin + href;
+  return urlObj.origin + "/" + href;
+}
+
+function extractFavicon(html: string, urlObj: URL): string | undefined {
+  // Try matching <link> tags with rel containing "icon" (covers icon, shortcut icon, apple-touch-icon)
+  // Handle both href-before-rel and rel-before-href orderings
+  const patterns = [
+    /<link[^>]*rel=["'][^"']*icon[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/gi,
+    /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'][^"']*icon[^"']*["'][^>]*>/gi,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(html);
+    if (match) {
+      return resolveHref(match[1], urlObj);
+    }
+  }
+
+  return undefined;
+}
+
 async function extractMetadata(url: string) {
   let title = url;
   let description = "";
   let favicon: string | undefined;
+  const urlObj = new URL(url);
 
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; BookmarkManager/1.0)",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(10000),
@@ -51,27 +78,16 @@ async function extractMetadata(url: string) {
       }
     }
 
-    // Build favicon URL
-    const urlObj = new URL(url);
-    const iconLinkMatch = html.match(
-      /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["'][^>]*>/i
-    );
-    if (iconLinkMatch) {
-      const href = iconLinkMatch[1];
-      if (href.startsWith("http")) {
-        favicon = href;
-      } else if (href.startsWith("//")) {
-        favicon = urlObj.protocol + href;
-      } else if (href.startsWith("/")) {
-        favicon = urlObj.origin + href;
-      } else {
-        favicon = urlObj.origin + "/" + href;
-      }
-    } else {
+    // Extract favicon from HTML
+    favicon = extractFavicon(html, urlObj);
+
+    // Fallback to /favicon.ico
+    if (!favicon) {
       favicon = urlObj.origin + "/favicon.ico";
     }
   } catch {
-    // Keep defaults if fetch fails
+    // If fetch fails entirely, use Google's favicon service as fallback
+    favicon = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
   }
 
   return { title, description, favicon };
