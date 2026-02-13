@@ -1,5 +1,5 @@
-import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCachedQuery } from "./lib/useCachedQuery";
 
 export function TagFilter({
   selectedTags,
@@ -8,7 +8,7 @@ export function TagFilter({
   selectedTags: Set<string>;
   onToggleTag: (tag: string) => void;
 }) {
-  const allTags = useQuery(api.bookmarks.listTags);
+  const allTags = useCachedQuery(api.bookmarks.listTags, {}, "bookmarks:listTags");
 
   if (!allTags || allTags.length === 0) return null;
 

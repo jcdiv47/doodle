@@ -22,7 +22,18 @@ export function BookmarkItem({
   const [showTagInput, setShowTagInput] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemoveTag, setConfirmRemoveTag] = useState<string | null>(null);
-  const remove = useMutation(api.bookmarks.remove);
+  const remove = useMutation(api.bookmarks.remove).withOptimisticUpdate(
+    (localStore, args) => {
+      const current = localStore.getQuery(api.bookmarks.list, {});
+      if (current !== undefined) {
+        localStore.setQuery(
+          api.bookmarks.list,
+          {},
+          current.filter((b) => b._id !== args.bookmarkId),
+        );
+      }
+    },
+  );
   const removeTag = useMutation(api.bookmarks.removeTag);
   const trackRead = useMutation(api.bookmarks.trackRead);
 

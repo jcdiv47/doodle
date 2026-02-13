@@ -5,8 +5,9 @@ import {
   useCallback,
   type KeyboardEvent,
 } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCachedQuery } from "./lib/useCachedQuery";
 import type { Id } from "../convex/_generated/dataModel";
 
 export function TagInput({
@@ -21,7 +22,7 @@ export function TagInput({
   const [value, setValue] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const addTag = useMutation(api.bookmarks.addTag);
-  const allTags = useQuery(api.bookmarks.listTags) ?? [];
+  const allTags = useCachedQuery(api.bookmarks.listTags, {}, "bookmarks:listTags") ?? [];
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 

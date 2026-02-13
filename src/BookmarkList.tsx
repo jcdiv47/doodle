@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCachedQuery } from "./lib/useCachedQuery";
 import { BookmarkItem } from "./BookmarkItem";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -30,7 +31,7 @@ export function BookmarkList({
   onExitSelectionMode?: () => void;
 }) {
   const trimmed = searchQuery.trim();
-  const allBookmarks = useQuery(api.bookmarks.list, trimmed ? "skip" : {});
+  const allBookmarks = useCachedQuery(api.bookmarks.list, trimmed ? "skip" : {}, "bookmarks:list");
   const searchResults = useQuery(
     api.bookmarks.search,
     trimmed ? { query: trimmed } : "skip"
@@ -64,7 +65,25 @@ export function BookmarkList({
 
   if (bookmarks === undefined) {
     return (
-      <div className="mt-8 font-mono text-sm text-zinc-text">loading...</div>
+      <div className="mt-6">
+        <div className="mb-3 h-5" />
+        <div className="divide-y divide-zinc-border border border-zinc-border">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="animate-pulse p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-4 w-4 shrink-0 rounded-full bg-zinc-text/10" />
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 rounded bg-zinc-text/10" style={{ width: `${40 + i * 8}%` }} />
+                    <div className="h-3.5 w-16 rounded bg-zinc-text/5" />
+                  </div>
+                  <div className="h-3.5 w-3/4 rounded bg-zinc-text/5" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 

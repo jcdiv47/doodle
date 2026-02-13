@@ -6,8 +6,9 @@ import {
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCachedQuery } from "./lib/useCachedQuery";
 import type { Id } from "../convex/_generated/dataModel";
 
 function BulkTagInput({
@@ -20,7 +21,7 @@ function BulkTagInput({
   const [value, setValue] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const bulkAddTag = useMutation(api.bookmarks.bulkAddTag);
-  const allTags = useQuery(api.bookmarks.listTags) ?? [];
+  const allTags = useCachedQuery(api.bookmarks.listTags, {}, "bookmarks:listTags") ?? [];
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 

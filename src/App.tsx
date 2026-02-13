@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import {
   useConvexAuth,
-  useQuery,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCachedQuery } from "./lib/useCachedQuery";
 import { AddBookmark } from "./AddBookmark";
 import { BookmarkList } from "./BookmarkList";
 import { TagFilter } from "./TagFilter";
@@ -48,7 +48,7 @@ function UserBadge({
 }: {
   onSignOut: () => Promise<void>;
 }) {
-  const user = useQuery(api.users.me);
+  const user = useCachedQuery(api.users.me, {}, "users:me");
   const [open, setOpen] = useState(false);
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
   const [passkeysOpen, setPasskeysOpen] = useState(false);
@@ -267,8 +267,51 @@ function BookmarkApp({
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-charcoal">
-      <div className="font-mono text-sm text-zinc-text">loading...</div>
+    <div className="min-h-screen bg-charcoal font-sans">
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <header className="mb-10 flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <div>
+              <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+                bookmarks
+              </h1>
+              <p className="mt-1 font-mono text-xs text-zinc-text">
+                save. search. retrieve.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 rounded-full bg-zinc-text/10" />
+          </div>
+        </header>
+
+        <div className="relative mt-8">
+          <div className="w-full border border-zinc-border bg-charcoal-light py-3 pl-11 pr-10">
+            <span className="font-mono text-base text-zinc-text/40">search bookmarks...</span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="mb-3 h-5" />
+          <div className="divide-y divide-zinc-border border border-zinc-border">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="animate-pulse p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 h-4 w-4 shrink-0 rounded-full bg-zinc-text/10" />
+                  <div className="min-w-0 flex-1 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 rounded bg-zinc-text/10" style={{ width: `${40 + i * 8}%` }} />
+                      <div className="h-3.5 w-16 rounded bg-zinc-text/5" />
+                    </div>
+                    <div className="h-3.5 w-3/4 rounded bg-zinc-text/5" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -278,10 +321,7 @@ function AuthenticatedContent({
 }: {
   onSignOut: () => Promise<void>;
 }) {
-  const user = useQuery(api.users.me);
   const pathname = usePathname();
-
-  if (user === undefined) return <LoadingScreen />;
 
   if (pathname === "/dashboard") {
     return <Dashboard onNavigateBack={() => navigate("/")} />;
@@ -329,8 +369,18 @@ export default function App() {
   }, []);
 
   const isProcessingOAuthCallback = isProcessingOAuthCallbackRef.current;
+  const hasCachedData = useRef((() => {
+    try { return localStorage.getItem("bookmarks:list") !== null; } catch { return false; }
+  })()).current;
 
-  if (isLoading || isSigningOut || isProcessingOAuthCallback) {
+  if (isSigningOut || isProcessingOAuthCallback) {
+    return <LoadingScreen />;
+  }
+
+  if (isLoading) {
+    if (hasCachedData) {
+      return <AuthenticatedContent onSignOut={handleSignOut} />;
+    }
     return <LoadingScreen />;
   }
 
