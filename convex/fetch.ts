@@ -8,6 +8,34 @@ function googleFavicon(hostname: string): string {
   return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
 }
 
+async function fetchHead(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(5000),
+  });
+
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+
+  const decoder = new TextDecoder();
+  let html = "";
+  const maxBytes = 32_768; // 32 KB — more than enough for <head>
+
+  while (html.length < maxBytes) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    html += decoder.decode(value, { stream: true });
+    if (/<\/head\s*>/i.test(html)) break;
+  }
+
+  reader.cancel();
+  return html;
+}
+
 async function extractMetadata(url: string) {
   let title = url;
   let description = "";
@@ -15,16 +43,7 @@ async function extractMetadata(url: string) {
   const favicon = googleFavicon(urlObj.hostname);
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(10000),
-    });
-
-    const html = await response.text();
+    const html = await fetchHead(url);
 
     // Extract title
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
