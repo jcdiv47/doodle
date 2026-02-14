@@ -4,36 +4,15 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
-function resolveHref(href: string, urlObj: URL): string {
-  if (href.startsWith("http")) return href;
-  if (href.startsWith("//")) return urlObj.protocol + href;
-  if (href.startsWith("/")) return urlObj.origin + href;
-  return urlObj.origin + "/" + href;
-}
-
-function extractFavicon(html: string, urlObj: URL): string | undefined {
-  // Try matching <link> tags with rel containing "icon" (covers icon, shortcut icon, apple-touch-icon)
-  // Handle both href-before-rel and rel-before-href orderings
-  const patterns = [
-    /<link[^>]*rel=["'][^"']*icon[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/gi,
-    /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'][^"']*icon[^"']*["'][^>]*>/gi,
-  ];
-
-  for (const pattern of patterns) {
-    const match = pattern.exec(html);
-    if (match) {
-      return resolveHref(match[1], urlObj);
-    }
-  }
-
-  return undefined;
+function googleFavicon(hostname: string): string {
+  return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
 }
 
 async function extractMetadata(url: string) {
   let title = url;
   let description = "";
-  let favicon: string | undefined;
   const urlObj = new URL(url);
+  const favicon = googleFavicon(urlObj.hostname);
 
   try {
     const response = await fetch(url, {
@@ -77,17 +56,8 @@ async function extractMetadata(url: string) {
         description = ogMatch[1].trim().replace(/\s+/g, " ");
       }
     }
-
-    // Extract favicon from HTML
-    favicon = extractFavicon(html, urlObj);
-
-    // Fallback to /favicon.ico
-    if (!favicon) {
-      favicon = urlObj.origin + "/favicon.ico";
-    }
   } catch {
-    // If fetch fails entirely, use Google's favicon service as fallback
-    favicon = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+    // title/description stay as defaults, favicon is always from Google
   }
 
   return { title, description, favicon };

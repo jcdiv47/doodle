@@ -272,7 +272,8 @@ async function extractPageInfo() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) return null;
 
-    const info = { url: tab.url || "", title: tab.title || "", description: "", favicon: tab.favIconUrl || "" };
+    const hostname = tab.url ? new URL(tab.url).hostname : "";
+    const info = { url: tab.url || "", title: tab.title || "", description: "", favicon: hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=64` : "" };
 
     // Don't try to inject into chrome:// or extension pages
     if (info.url.startsWith("chrome") || info.url.startsWith("about:") || info.url.startsWith("edge:")) {
