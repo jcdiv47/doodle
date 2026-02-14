@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useCachedQuery } from "./lib/useCachedQuery";
@@ -62,6 +62,23 @@ export function BookmarkList({
 
     return sorted;
   }, [rawBookmarks, selectedTags, sortBy, sortOrder]);
+
+  // Track which bookmark IDs have been seen so only genuinely new items
+  // (e.g. just added by the user) get the entrance animation.
+  const seenIdsRef = useRef<Set<string> | null>(null);
+
+  if (bookmarks && seenIdsRef.current === null) {
+    // First render with data — mark everything as already seen
+    seenIdsRef.current = new Set(bookmarks.map((b) => b._id));
+  }
+
+  useEffect(() => {
+    if (bookmarks && seenIdsRef.current) {
+      for (const b of bookmarks) {
+        seenIdsRef.current.add(b._id);
+      }
+    }
+  }, [bookmarks]);
 
   if (bookmarks === undefined) {
     return (
@@ -179,6 +196,7 @@ export function BookmarkList({
               key={bookmark.url}
               bookmark={bookmark}
               index={index}
+              isNew={seenIdsRef.current !== null && !seenIdsRef.current.has(bookmark._id)}
               selectionMode={selectionMode}
               isSelected={selectedIds?.has(bookmark._id)}
               onToggleSelection={onToggleSelection}

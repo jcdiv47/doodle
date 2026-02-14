@@ -1,19 +1,21 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { EditNotes } from "./EditNotes";
 import { TagInput } from "./TagInput";
 import type { Doc, Id } from "../convex/_generated/dataModel";
 
-export function BookmarkItem({
+export const BookmarkItem = memo(function BookmarkItem({
   bookmark,
   index,
+  isNew,
   selectionMode,
   isSelected,
   onToggleSelection,
 }: {
   bookmark: Doc<"bookmarks">;
   index: number;
+  isNew?: boolean;
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (id: Id<"bookmarks">) => void;
@@ -66,8 +68,8 @@ export function BookmarkItem({
 
   return (
     <div
-      className={`animate-fade-in-up bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter ${showTagInput ? "relative z-10" : ""} ${selectionMode && isSelected ? "border-l-2 border-l-amber bg-amber/5" : ""}`}
-      style={{ animationDelay: `${index * 50}ms` }}
+      className={`${isNew ? "animate-fade-in-up" : ""} bg-charcoal-light p-4 transition-colors hover:bg-charcoal-lighter ${showTagInput ? "relative z-10" : ""} ${selectionMode && isSelected ? "border-l-2 border-l-amber bg-amber/5" : ""}`}
+      style={isNew ? { animationDelay: `${index * 50}ms` } : undefined}
       onClick={selectionMode ? () => onToggleSelection?.(bookmark._id) : undefined}
       role={selectionMode ? "button" : undefined}
     >
@@ -240,4 +242,4 @@ export function BookmarkItem({
       )}
     </div>
   );
-}
+});
