@@ -77,6 +77,59 @@ export const listUrlsByUser = internalQuery({
   },
 });
 
+export const listByUserWithFilters = internalQuery({
+  args: {
+    userId: v.id("users"),
+    createdAtStartMs: v.optional(v.number()),
+    createdAtEndMs: v.optional(v.number()),
+    tags: v.optional(v.array(v.string())),
+  },
+  returns: v.array(bookmarkFields),
+  handler: async (ctx, args) => {
+    const requiredTags = args.tags
+      ?.map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean);
+    const requiredTagSet =
+      requiredTags && requiredTags.length > 0 ? new Set(requiredTags) : null;
+
+    const bookmarks = await ctx.db
+      .query("bookmarks")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+
+    return bookmarks.filter((bookmark) => {
+      if (
+        args.createdAtStartMs !== undefined &&
+        bookmark._creationTime < args.createdAtStartMs
+      ) {
+        return false;
+      }
+
+      if (
+        args.createdAtEndMs !== undefined &&
+        bookmark._creationTime >= args.createdAtEndMs
+      ) {
+        return false;
+      }
+
+      if (!requiredTagSet) {
+        return true;
+      }
+
+      const bookmarkTagSet = new Set(
+        (bookmark.tags ?? []).map((tag) => tag.toLowerCase())
+      );
+      for (const tag of requiredTagSet) {
+        if (!bookmarkTagSet.has(tag)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  },
+});
+
 async function collectTags(ctx: QueryCtx, userId: Id<"users">) {
   const bookmarks = await ctx.db
     .query("bookmarks")
