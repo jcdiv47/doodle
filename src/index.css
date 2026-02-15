@@ -53,3 +53,146 @@ body {
   background-color: #f59e0b;
   color: #0a0a0b;
 }
+
+.memo-markdown {
+  color: #e4e4e7;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.memo-markdown > :first-child {
+  margin-top: 0;
+}
+
+.memo-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.md-h1,
+.md-h2,
+.md-h3,
+.md-h4 {
+  color: #fafafa;
+  font-weight: 500;
+  margin: 0.6rem 0 0.35rem;
+}
+
+.md-h1 {
+  font-size: 1.1rem;
+}
+
+.md-h2 {
+  font-size: 1rem;
+}
+
+.md-h3 {
+  font-size: 0.95rem;
+}
+
+.md-h4 {
+  font-size: 0.9rem;
+}
+
+.md-paragraph {
+  margin: 0.55rem 0;
+}
+
+.md-list {
+  margin: 0.55rem 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.3rem;
+  list-style-type: disc;
+}
+
+.md-list-ordered {
+  list-style-type: decimal;
+}
+
+.md-blockquote {
+  margin: 0.75rem 0;
+  padding: 0.45rem 0.7rem;
+  border-left: 2px solid #f59e0b66;
+  background: #ffffff03;
+  color: #d4d4d8;
+}
+
+.md-blockquote p {
+  margin: 0.2rem 0;
+}
+
+.md-link {
+  color: #f59e0b;
+  text-decoration: none;
+}
+
+.md-link:hover {
+  text-decoration: underline;
+}
+
+.md-tag {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: #7dd3fc;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.md-tag:hover {
+  color: #bae6fd;
+  text-decoration: underline;
+}
+
+.md-inline-code {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border: 1px solid #27272a;
+  background: #1c1c1f;
+  color: #f59e0b;
+  font-size: 0.8rem;
+}
+
+.md-code-wrap {
+  margin: 0.75rem 0;
+  border: 1px solid #27272a;
+  background: #09090b;
+}
+
+.md-code-lang {
+  border-bottom: 1px solid #27272a;
+  background: #141416;
+  color: #a1a1aa;
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.6rem;
+}
+
+.md-code-block {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  color: #e4e4e7;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.md-token-comment {
+  color: #71717a;
+}
+
+.md-token-string {
+  color: #86efac;
+}
+
+.md-token-number {
+  color: #93c5fd;
+}
+
+.md-token-keyword {
+  color: #fda4af;
+}

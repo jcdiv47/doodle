@@ -26,6 +26,15 @@ export const get = query({
     weeklyActivity: v.array(
       v.object({ weekLabel: v.string(), count: v.number() }),
     ),
+    totalMemos: v.number(),
+    pinnedMemosCount: v.number(),
+    nsfwMemosCount: v.number(),
+    memoCreatedTodayCount: v.number(),
+    memoUniqueTagsCount: v.number(),
+    topMemoTags: v.array(v.object({ tag: v.string(), count: v.number() })),
+    memoWeeklyActivity: v.array(
+      v.object({ weekLabel: v.string(), count: v.number() }),
+    ),
   }),
   handler: async (ctx) => {
     const userId = await getCurrentUserId(ctx);
@@ -41,11 +50,22 @@ export const get = query({
         topTags: [],
         mostRead: [],
         weeklyActivity: [],
+        totalMemos: 0,
+        pinnedMemosCount: 0,
+        nsfwMemosCount: 0,
+        memoCreatedTodayCount: 0,
+        memoUniqueTagsCount: 0,
+        topMemoTags: [],
+        memoWeeklyActivity: [],
       };
     }
 
     const bookmarks = await ctx.db
       .query("bookmarks")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const memos = await ctx.db
+      .query("memos")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
@@ -113,6 +133,42 @@ export const get = query({
       weeks.push({ weekLabel, count });
     }
 
+    const totalMemos = memos.length;
+    let pinnedMemosCount = 0;
+    let nsfwMemosCount = 0;
+    let memoCreatedTodayCount = 0;
+    const memoTagCounts = new Map<string, number>();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+
+    for (const memo of memos) {
+      if (memo.isPinned) pinnedMemosCount += 1;
+      if (memo.hasNsfw) nsfwMemosCount += 1;
+      if (memo._creationTime >= startOfTodayMs) memoCreatedTodayCount += 1;
+
+      for (const tag of memo.tags) {
+        memoTagCounts.set(tag, (memoTagCounts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    const topMemoTags = [...memoTagCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([tag, count]) => ({ tag, count }));
+
+    const memoWeeklyActivity: { weekLabel: string; count: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const weekStart = now - (i + 1) * msPerWeek;
+      const weekEnd = now - i * msPerWeek;
+      const count = memos.filter(
+        (memo) => memo._creationTime >= weekStart && memo._creationTime < weekEnd,
+      ).length;
+      const d = new Date(weekStart);
+      const weekLabel = `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getDate().toString().padStart(2, "0")}`;
+      memoWeeklyActivity.push({ weekLabel, count });
+    }
+
     return {
       totalBookmarks,
       totalReads,
@@ -124,6 +180,13 @@ export const get = query({
       topTags,
       mostRead,
       weeklyActivity: weeks,
+      totalMemos,
+      pinnedMemosCount,
+      nsfwMemosCount,
+      memoCreatedTodayCount,
+      memoUniqueTagsCount: memoTagCounts.size,
+      topMemoTags,
+      memoWeeklyActivity,
     };
   },
 });
