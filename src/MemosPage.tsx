@@ -269,10 +269,10 @@ function MemoCard({
                 setMenuOpen((open) => !open);
                 setConfirmDelete(false);
               }}
-              className="rounded border border-zinc-border px-2 py-1 text-zinc-text transition-colors hover:border-zinc-text/50 hover:text-white"
+              className="rounded px-2 py-0.5 font-mono text-lg leading-none text-zinc-text transition-colors hover:text-white"
               aria-label="Memo options"
             >
-              <span className="font-mono text-base leading-none">...</span>
+              <span aria-hidden="true">⋮</span>
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full z-10 mt-1.5 w-32 border border-zinc-border bg-charcoal shadow-lg">
