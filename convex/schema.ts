@@ -40,4 +40,27 @@ export default defineSchema({
       searchField: "searchText",
       filterFields: ["userId"],
     }),
+
+  navigations: defineTable({
+    title: v.string(),
+    url: v.string(),
+    description: v.string(),
+    favicon: v.optional(v.string()),
+    position: v.optional(v.number()),
+    userId: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_url", ["userId", "url"]),
+
+  memos: defineTable({
+    content: v.string(),
+    tags: v.array(v.string()),
+    searchText: v.string(),
+    hasNsfw: v.boolean(),
+    isPinned: v.boolean(),
+    updatedAt: v.number(),
+    userId: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_pinned", ["userId", "isPinned"]),
 });

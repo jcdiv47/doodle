@@ -16,7 +16,7 @@ type Preview = {
   favicon?: string;
 };
 
-export function AddBookmark({
+export function AddNavigation({
   label = "+",
   className,
   ariaLabel,
@@ -29,31 +29,39 @@ export function AddBookmark({
   const [url, setUrl] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const bookmarks = useQuery(api.bookmarks.list);
+  const navigations = useQuery(api.navigations.list);
   const previewUrl = useAction(api.fetch.previewUrl);
-  const addBookmark = useMutation(api.bookmarks.add).withOptimisticUpdate(
+  const addNavigation = useMutation(api.navigations.add).withOptimisticUpdate(
     (localStore, args) => {
-      const current = localStore.getQuery(api.bookmarks.list, {});
+      const current = localStore.getQuery(api.navigations.list, {});
       const user = localStore.getQuery(api.users.me, {});
       if (current !== undefined && user?._id) {
-        localStore.setQuery(api.bookmarks.list, {}, [
+        const orderedCurrent = [...current].sort((a, b) => {
+          const aPosition = a.position ?? Number.MAX_SAFE_INTEGER;
+          const bPosition = b.position ?? Number.MAX_SAFE_INTEGER;
+          if (aPosition !== bPosition) {
+            return aPosition - bPosition;
+          }
+          return b._creationTime - a._creationTime;
+        });
+        const maxPosition = orderedCurrent.reduce(
+          (max, navigation, index) => Math.max(max, navigation.position ?? index),
+          -1
+        );
+        localStore.setQuery(api.navigations.list, {}, [
+          ...current,
           {
-            _id: `optimistic_${Date.now()}` as unknown as Id<"bookmarks">,
+            _id: `optimistic_${Date.now()}` as unknown as Id<"navigations">,
             _creationTime: Date.now(),
             url: args.url,
             title: args.title || args.url,
             description: args.description || "",
-            searchText: args.url,
             favicon: args.favicon,
-            notes: args.notes,
-            tags: undefined,
-            readCount: undefined,
+            position: maxPosition + 1,
             userId: user._id,
           },
-          ...current,
         ]);
       }
     },
@@ -67,7 +75,6 @@ export function AddBookmark({
         setUrl("");
         setPreview(null);
         setIsLoading(false);
-        setNotes("");
         setError(null);
       }
     };
@@ -118,8 +125,8 @@ export function AddBookmark({
     const finalUrl = normalizeUrl(url);
     if (!finalUrl || !preview) return;
 
-    if (bookmarks?.some((b) => b.url === finalUrl)) {
-      setError("this url has already been bookmarked");
+    if (navigations?.some((n) => n.url === finalUrl)) {
+      setError("this site already exists");
       return;
     }
 
@@ -128,11 +135,10 @@ export function AddBookmark({
       title: preview.title,
       description: preview.description,
       favicon: preview.favicon,
-      notes: notes.trim() || undefined,
     };
 
     handleClose();
-    addBookmark(payload);
+    addNavigation(payload);
   };
 
   const handleClose = () => {
@@ -140,7 +146,6 @@ export function AddBookmark({
     setUrl("");
     setPreview(null);
     setIsLoading(false);
-    setNotes("");
     setError(null);
   };
 
@@ -148,7 +153,7 @@ export function AddBookmark({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        aria-label={ariaLabel ?? (typeof label === "string" ? label : "add bookmark")}
+        aria-label={ariaLabel ?? (typeof label === "string" ? label : "add site")}
         className={
           className ??
           "border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
@@ -169,7 +174,7 @@ export function AddBookmark({
             >
               <div className="mb-4 flex items-center justify-between">
                 <span className="font-mono text-sm text-amber">
-                  add bookmark
+                  add site
                 </span>
                 <button
                   onClick={handleClose}
@@ -270,23 +275,6 @@ export function AddBookmark({
                       </div>
                     </div>
                   </div>
-
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (
-                        e.key === "Enter" &&
-                        (e.ctrlKey || e.metaKey)
-                      ) {
-                        e.preventDefault();
-                        handleAdd();
-                      }
-                    }}
-                    placeholder="add a note (optional)..."
-                    rows={2}
-                    className="mt-3 w-full resize-none border border-zinc-border bg-charcoal-light px-3 py-2 font-mono text-sm text-white placeholder-zinc-text outline-none transition-colors focus:border-amber"
-                  />
 
                   <div className="mt-4 flex gap-3">
                     <button

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useCachedQuery } from "./lib/useCachedQuery";
@@ -30,6 +30,7 @@ export function BookmarkList({
   onEnterSelectionMode?: () => void;
   onExitSelectionMode?: () => void;
 }) {
+  const [todayOnly, setTodayOnly] = useState(false);
   const trimmed = searchQuery.trim();
   const allBookmarks = useCachedQuery(api.bookmarks.list, trimmed ? "skip" : {}, "bookmarks:list");
   const searchResults = useQuery(
@@ -50,6 +51,21 @@ export function BookmarkList({
       });
     }
 
+    if (todayOnly) {
+      const now = new Date();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      ).getTime();
+      const endOfToday = startOfToday + 24 * 60 * 60 * 1000;
+      filtered = filtered.filter(
+        (bookmark) =>
+          bookmark._creationTime >= startOfToday &&
+          bookmark._creationTime < endOfToday
+      );
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       let cmp: number;
       if (sortBy === "readCount") {
@@ -61,7 +77,7 @@ export function BookmarkList({
     });
 
     return sorted;
-  }, [rawBookmarks, selectedTags, sortBy, sortOrder]);
+  }, [rawBookmarks, selectedTags, sortBy, sortOrder, todayOnly]);
 
   // Track which bookmark IDs have been seen so only genuinely new items
   // (e.g. just added by the user) get the entrance animation.
@@ -150,6 +166,17 @@ export function BookmarkList({
         >
           {sortOrder === "asc" ? "\u2191" : "\u2193"}
         </button>
+        <button
+          onClick={() => setTodayOnly((prev) => !prev)}
+          className={`px-1 transition-colors ${
+            todayOnly
+              ? "text-amber"
+              : "text-zinc-text hover:text-white/70"
+          }`}
+          aria-pressed={todayOnly}
+        >
+          today
+        </button>
         <span className="ml-auto inline-flex items-center gap-2">
           {selectionMode && bookmarks.length > 0 && (
             <button
@@ -183,11 +210,13 @@ export function BookmarkList({
 
       {bookmarks.length === 0 ? (
         <div className="border border-dashed border-zinc-border p-8 text-center font-mono text-sm text-zinc-text">
-          {selectedTags.size > 0
-            ? "no bookmarks match the selected tags"
-            : trimmed
-              ? "no results found"
-              : "no bookmarks yet \u2014 add one above"}
+          {todayOnly
+            ? "no bookmarks created today"
+            : selectedTags.size > 0
+              ? "no bookmarks match the selected tags"
+              : trimmed
+                ? "no results found"
+                : "no bookmarks yet \u2014 add one above"}
         </div>
       ) : (
         <div className="divide-y divide-zinc-border border border-zinc-border">

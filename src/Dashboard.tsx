@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { UserBadge } from "./UserBadge";
 
 function StatCard({
   label,
@@ -32,8 +33,10 @@ function StatCard({
 
 function ActivityChart({
   weeks,
+  unitLabelPlural,
 }: {
   weeks: { weekLabel: string; count: number }[];
+  unitLabelPlural: string;
 }) {
   const max = Math.max(...weeks.map((w) => w.count), 1);
 
@@ -64,7 +67,10 @@ function ActivityChart({
               />
               {/* Tooltip */}
               <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap border border-zinc-border bg-charcoal px-2 py-1 font-mono text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {week.count} {week.count === 1 ? "bookmark" : "bookmarks"}
+                {week.count}{" "}
+                {week.count === 1
+                  ? unitLabelPlural.replace(/s$/, "")
+                  : unitLabelPlural}
               </div>
               {/* Label every other week */}
               {i % 2 === 0 && (
@@ -218,8 +224,12 @@ function MostReadList({
 
 export function Dashboard({
   onNavigateBack,
+  onNavigateToMemos,
+  onSignOut,
 }: {
   onNavigateBack: () => void;
+  onNavigateToMemos: () => void;
+  onSignOut: () => Promise<void>;
 }) {
   const stats = useQuery(api.stats.get);
 
@@ -237,9 +247,11 @@ export function Dashboard({
     <div className="min-h-screen bg-charcoal font-sans">
       <div className="mx-auto max-w-3xl px-4 py-12">
         {/* Header */}
-        <header className="mb-10 flex items-start justify-between">
+        <header className="mb-10 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <a href="/" className="mt-0.5 block h-7 w-7 shrink-0">
+              <img src="/logo.svg" alt="" className="h-7 w-7" />
+            </a>
             <div>
               <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
                 dashboard
@@ -249,16 +261,22 @@ export function Dashboard({
               </p>
             </div>
           </div>
-          <button
-            onClick={onNavigateBack}
-            className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
-          >
-            &larr; bookmarks
-          </button>
+          <UserBadge onSignOut={onSignOut} />
         </header>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+            bookmarks
+          </h1>
+          <button
+            onClick={onNavigateBack}
+            className="border border-zinc-border bg-charcoal-light px-4 py-2 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
+          >
+            &larr; bookmarks
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="bookmarks"
             value={stats.totalBookmarks}
@@ -285,7 +303,10 @@ export function Dashboard({
 
         {/* Activity chart */}
         <div className="mt-6">
-          <ActivityChart weeks={stats.weeklyActivity} />
+          <ActivityChart
+            weeks={stats.weeklyActivity}
+            unitLabelPlural="bookmarks"
+          />
         </div>
 
         {/* Two-column: domains + tags */}
@@ -311,6 +332,59 @@ export function Dashboard({
         {/* Most read */}
         <div className="mt-6">
           <MostReadList bookmarks={stats.mostRead} />
+        </div>
+
+        <div className="mt-10 flex items-center justify-between gap-4">
+          <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+            memos
+          </h1>
+          <button
+            onClick={onNavigateToMemos}
+            className="border border-zinc-border bg-charcoal-light px-4 py-2 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
+          >
+            &larr; memos
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard
+            label="memos"
+            value={stats.totalMemos}
+            index={0}
+          />
+          <StatCard
+            label="pinned"
+            value={stats.pinnedMemosCount}
+            index={1}
+          />
+          <StatCard
+            label="nsfw"
+            value={stats.nsfwMemosCount}
+            index={2}
+          />
+          <StatCard
+            label="tags"
+            value={stats.memoUniqueTagsCount}
+            sub={`${stats.memoCreatedTodayCount} created today`}
+            index={3}
+          />
+        </div>
+
+        <div className="mt-6">
+          <ActivityChart
+            weeks={stats.memoWeeklyActivity}
+            unitLabelPlural="memos"
+          />
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <RankedList
+            title="top memo tags"
+            items={stats.topMemoTags.map((tag) => ({
+              label: tag.tag,
+              count: tag.count,
+            }))}
+            delay={350}
+          />
         </div>
       </div>
     </div>
