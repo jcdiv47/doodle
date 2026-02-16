@@ -41,6 +41,17 @@ export default defineSchema({
       filterFields: ["userId"],
     }),
 
+  navigations: defineTable({
+    title: v.string(),
+    url: v.string(),
+    description: v.string(),
+    favicon: v.optional(v.string()),
+    position: v.optional(v.number()),
+    userId: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_url", ["userId", "url"]),
+
   memos: defineTable({
     content: v.string(),
     tags: v.array(v.string()),

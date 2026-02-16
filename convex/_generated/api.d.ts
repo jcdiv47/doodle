@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as memos from "../memos.js";
+import type * as navigations from "../navigations.js";
 import type * as stats from "../stats.js";
 import type * as users from "../users.js";
 
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/hash": typeof lib_hash;
   memos: typeof memos;
+  navigations: typeof navigations;
   stats: typeof stats;
   users: typeof users;
 }>;

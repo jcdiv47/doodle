@@ -306,7 +306,14 @@ export default function App() {
 
   const isProcessingOAuthCallback = isProcessingOAuthCallbackRef.current;
   const hasCachedData = useRef((() => {
-    try { return localStorage.getItem("bookmarks:list") !== null; } catch { return false; }
+    try {
+      return (
+        localStorage.getItem("bookmarks:list") !== null ||
+        localStorage.getItem("navigations:list") !== null
+      );
+    } catch {
+      return false;
+    }
   })()).current;
 
   if (isSigningOut || isProcessingOAuthCallback) {
