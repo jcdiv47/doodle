@@ -3,6 +3,7 @@ import {
   useEffect,
   type ClipboardEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useAction, useQuery } from "convex/react";
@@ -15,7 +16,15 @@ type Preview = {
   favicon?: string;
 };
 
-export function AddBookmark() {
+export function AddBookmark({
+  label = "+",
+  className,
+  ariaLabel,
+}: {
+  label?: ReactNode;
+  className?: string;
+  ariaLabel?: string;
+} = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -139,11 +148,13 @@ export function AddBookmark() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        aria-label="add bookmark"
-        className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
+        aria-label={ariaLabel ?? (typeof label === "string" ? label : "add bookmark")}
+        className={
+          className ??
+          "border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-amber transition-colors hover:bg-amber hover:text-charcoal"
+        }
       >
-        <span className="sm:hidden">+</span>
-      <span className="hidden sm:inline">+</span>
+        {label}
       </button>
 
       {isOpen &&

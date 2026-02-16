@@ -569,13 +569,15 @@ export function MemosPage({
       <div className="mx-auto max-w-3xl px-4 py-12">
         <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <a href="/" className="mt-0.5 block h-7 w-7 shrink-0">
+              <img src="/logo.svg" alt="" className="h-7 w-7" />
+            </a>
             <div>
               <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
                 memos
               </h1>
               <p className="mt-1 font-mono text-xs text-zinc-text">
-                markdown notes with tags and quick actions
+                quick thought dump
               </p>
             </div>
           </div>

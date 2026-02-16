@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { UserBadge } from "./UserBadge";
 
 function StatCard({
   label,
@@ -223,8 +224,12 @@ function MostReadList({
 
 export function Dashboard({
   onNavigateBack,
+  onNavigateToMemos,
+  onSignOut,
 }: {
   onNavigateBack: () => void;
+  onNavigateToMemos: () => void;
+  onSignOut: () => Promise<void>;
 }) {
   const stats = useQuery(api.stats.get);
 
@@ -242,9 +247,11 @@ export function Dashboard({
     <div className="min-h-screen bg-charcoal font-sans">
       <div className="mx-auto max-w-3xl px-4 py-12">
         {/* Header */}
-        <header className="mb-10 flex items-start justify-between">
+        <header className="mb-10 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <a href="/" className="mt-0.5 block h-7 w-7 shrink-0">
+              <img src="/logo.svg" alt="" className="h-7 w-7" />
+            </a>
             <div>
               <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
                 dashboard
@@ -254,18 +261,21 @@ export function Dashboard({
               </p>
             </div>
           </div>
-          <button
-            onClick={onNavigateBack}
-            className="border border-zinc-border bg-charcoal-light px-4 py-2.5 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
-          >
-            &larr; bookmarks
-          </button>
+          <UserBadge onSignOut={onSignOut} />
         </header>
 
         {/* Stat cards */}
-        <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
-          bookmarks
-        </h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+            bookmarks
+          </h1>
+          <button
+            onClick={onNavigateBack}
+            className="border border-zinc-border bg-charcoal-light px-4 py-2 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
+          >
+            &larr; bookmarks
+          </button>
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="bookmarks"
@@ -324,9 +334,17 @@ export function Dashboard({
           <MostReadList bookmarks={stats.mostRead} />
         </div>
 
-        <h1 className="mt-10 font-mono text-2xl font-medium tracking-tight text-white">
-          memos
-        </h1>
+        <div className="mt-10 flex items-center justify-between gap-4">
+          <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
+            memos
+          </h1>
+          <button
+            onClick={onNavigateToMemos}
+            className="border border-zinc-border bg-charcoal-light px-4 py-2 font-mono text-sm text-zinc-text transition-colors hover:bg-charcoal-lighter hover:text-white"
+          >
+            &larr; memos
+          </button>
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="memos"

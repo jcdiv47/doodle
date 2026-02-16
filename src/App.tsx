@@ -9,6 +9,7 @@ import { SignIn } from "./SignIn";
 import { Dashboard } from "./Dashboard";
 import { BulkActionBar } from "./BulkActionBar";
 import { MemosPage } from "./MemosPage";
+import { HomePage } from "./HomePage";
 import { UserBadge } from "./UserBadge";
 import { authClient } from "./lib/auth-client";
 import type { Id } from "../convex/_generated/dataModel";
@@ -87,7 +88,9 @@ function BookmarkApp({
       <div className="mx-auto max-w-3xl px-4 py-12">
         <header className="mb-10 flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <img src="/logo.svg" alt="" className="mt-0.5 h-7 w-7" />
+            <a href="/" className="mt-0.5 block h-7 w-7 shrink-0">
+              <img src="/logo.svg" alt="" className="h-7 w-7" />
+            </a>
             <div>
               <h1 className="font-mono text-2xl font-medium tracking-tight text-white">
                 bookmarks
@@ -227,10 +230,10 @@ function AuthenticatedContent({
 }) {
   const pathname = usePathname();
   const shouldRedirectToBookmarks =
-    pathname === "/" ||
-    (pathname !== "/bookmarks" &&
-      pathname !== "/dashboard" &&
-      pathname !== "/memos");
+    pathname !== "/" &&
+    pathname !== "/bookmarks" &&
+    pathname !== "/dashboard" &&
+    pathname !== "/memos";
 
   useEffect(() => {
     if (shouldRedirectToBookmarks) {
@@ -242,8 +245,18 @@ function AuthenticatedContent({
     return null;
   }
 
+  if (pathname === "/") {
+    return <HomePage onSignOut={onSignOut} onNavigate={navigate} />;
+  }
+
   if (pathname === "/dashboard") {
-    return <Dashboard onNavigateBack={() => navigate("/bookmarks")} />;
+    return (
+      <Dashboard
+        onNavigateBack={() => navigate("/bookmarks")}
+        onNavigateToMemos={() => navigate("/memos")}
+        onSignOut={onSignOut}
+      />
+    );
   }
 
   if (pathname === "/memos") {
